@@ -1,9 +1,9 @@
-## Interface: 90001
+## Interface: 90002
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: 1.0.0
-## OptionalDeps: TradeSkillMaster
+## Version: 1.0.1
+## Dependencies: TradeSkillMaster
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1
 
