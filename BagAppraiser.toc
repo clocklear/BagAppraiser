@@ -2,8 +2,8 @@
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: 1.0.1
-## Dependencies: TradeSkillMaster
+## Version: v9.0.2-1
+## OptionalDependencies: TradeSkillMaster, TheUndermineJournal
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1
 
@@ -13,12 +13,16 @@ libs\AceConfig-3.0\AceConfig-3.0.xml
 libs\AceConsole-3.0\AceConsole-3.0.xml
 libs\AceDB-3.0\AceDB-3.0.xml
 libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
+Libs\AceGUI-3.0\AceGUI-3.0.xml
 libs\AceEvent-3.0\AceEvent-3.0.xml
 libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
 #@end-no-lib-strip@
 
 core.lua
 const.lua
+config.lua
 databroker.lua
+debug.lua
 petdata.lua
 tsm.lua

@@ -1,7 +1,7 @@
-local BA = select(2, ...)
+local Addon = select(2, ...)
 
 local PetData = {}
-BA.PetData = PetData
+Addon.PetData = PetData
 
 PetData[8491] = "p:42:1:2" --  Cat Transport Basket  (Black  Tiger Cat)->  Black  Tiger Cat
 PetData[8492] = "p:50:1:2" -- Parrot cage  (Green-winged Macaw)->  Green-winged Macaw

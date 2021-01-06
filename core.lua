@@ -1,8 +1,8 @@
 local ADDON_NAME = ...;
-local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceEvent-3.0");
+local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0");
 
 -- todo: allow for changing this via a fancy UI
-local priceSource = "DBMarket";
+local defaultPriceSource = "DBMarket";
 local private = {
   atBank = false,
 }
@@ -20,7 +20,7 @@ local AddonDB_Defaults = {
 			['*'] = {					-- ["Realm.Name"] 
 			},
 		},
-  }
+  },
 }
 
 function Addon:OnInitialize()
@@ -30,9 +30,15 @@ function Addon:OnInitialize()
 end
 
 function Addon:OnEnable()
+  private.PreparePriceSources();
+
+  Addon:RegisterChatCommand("ba", private.chatCmdShowConfig)
+
   Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
   Addon:RegisterEvent("BANKFRAME_OPENED", private.OnBankFrameOpened)
   Addon:RegisterEvent("BANKFRAME_CLOSED", private.OnBankFrameClosed)
+
+  Addon:Print(format("%s loaded", Addon.CONST.METADATA.VERSION))
 end
 
 function Addon:UpdateData()
@@ -47,10 +53,28 @@ function Addon:UpdateData()
     for k, v in pairs(private.GetBankBagIDs()) do
       local bagValue = private.ValuateBag(k)
       private.SaveBagValue(k, bagValue)
+      private.SaveBankLastUpdated(time())
     end
   end
 
   private.RecalculateTotals();
+  local bankLastUpdated = private.GetBankLastUpdated();
+  if bankLastUpdated then
+    Addon:UpdateBankLastUpdatedText(date("%x %X", bankLastUpdated))
+  end
+end
+
+function Addon.GetFromDb(grp, key, ...)
+  if Addon.db.profile[grp] == nil then
+    Addon.db.profile[grp] = Addon.CONST.DB_DEFAULTS.profile[grp]
+  end
+  if not key then
+    return Addon.db.profile[grp]
+  end 
+  if Addon.db.profile[grp][key] == nil then
+    Addon.db.profile[grp][key] = Addon.CONST.DB_DEFAULTS.profile[grp][key]
+  end
+  return Addon.db.profile[grp][key]
 end
 
 function private.OnBagUpdateDelayed()
@@ -68,6 +92,7 @@ end
 
 function private.ValuateBag(bag)
   local size = GetContainerNumSlots(bag);
+  local priceSource = Addon.GetFromDb("pricesource", "source")
 	if size > 0 then
 		local value = 0;
 		for slot = 1, size do
@@ -80,8 +105,7 @@ function private.ValuateBag(bag)
         count = count or 0;
         
         -- Use info to lookup value
-        -- todo: abstract this to not depend on TSM (maybe)
-        local singleItemValue = Addon.TSM.GetItemValue(id, priceSource) or 0;
+        local singleItemValue = private.GetItemValue(id, priceSource) or 0;
         local totalValue = singleItemValue * count;
         value = value + totalValue;
       end
@@ -90,6 +114,38 @@ function private.ValuateBag(bag)
 		return value;
 	else
 		return 0;
+	end
+end
+
+function private.GetItemValue(itemID, priceSource)
+	-- from which addon is our selected price source?
+	if private.startsWith(Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")], "TUJ:") then
+		-- TUJ price source
+		if priceSource == "VendorSell" then
+			-- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
+			local VendorSell =  select(11, GetItemInfo(itemID)) or 0
+			Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
+			return VendorSell
+		else
+			local itemLink
+
+			-- battle pet handling
+			local newItemID = Addon.PetData.ItemID2Species(itemID)
+			if newItemID == itemID then
+				itemLink = itemID
+			else
+
+				itemLink = newItemID
+			end
+
+			local priceInfo = {}
+	    	TUJMarketInfo(itemLink, priceInfo)
+
+			return priceInfo[priceSource]
+		end
+	else
+		-- TSM price source
+		return Addon.TSM.GetItemValue(itemID, priceSource)
 	end
 end
 
@@ -107,6 +163,16 @@ function private.SaveBagValue(bag, value)
   local bagKey = format("Bag%s", bag);
   
   charTable[bagKey] = value;
+end
+
+function private.GetBankLastUpdated()
+  local charTable = private.GetCharacterTable();
+  return charTable["BankLastUpdated"];
+end
+
+function private.SaveBankLastUpdated(time)
+  local charTable = private.GetCharacterTable();
+  charTable["BankLastUpdated"] = time;
 end
 
 function private.GetPersonalBagIDs()
@@ -159,4 +225,82 @@ function private.RecalculateTotals()
   local grandTotalString = GetMoneyString(bagTotal + bankTotal, true);
   Addon:UpdateGrandTotalText(grandTotalString);
   Addon:UpdateDataBrokerText(grandTotalString);
+end
+
+function private.PreparePriceSources()
+  Addon.Debug.Log("PreparePriceSources()")
+
+  -- price source check --
+	local priceSources = private.GetAvailablePriceSources() or {}
+
+	-- only 2 or less price sources -> chat msg: missing modules
+	if private.tablelength(priceSources) <= 2 then
+		StaticPopupDialogs["BA_NO_PRICESOURCES"] = {
+			text = "|cffff0000Attention!|r Missing additional addons for price sources (e.g. like TradeSkillMaster or The Undermine Journal).\n\n|cffff0000BagAppraiser disabled.|r",
+			button1 = OKAY,
+			timeout = 0,
+			whileDead = true,
+			hideOnEscape = true
+		}
+		StaticPopup_Show("BA_NO_PRICESOURCES")
+
+		Addon:Print("|cffff0000BagAppraiser disabled.|r (see popup window for further details)")
+		Addon:Disable()
+		return
+	else
+		-- current preselected price source
+		local priceSource = Addon.GetFromDb("pricesource", "source")
+
+    -- normal price source check against prepared list
+    if not priceSources[priceSource] then
+      StaticPopupDialogs["BA_INVALID_CUSTOM_PRICESOURCE"] = {
+        text = "|cffff0000Attention!|r Your selected price source in BagAppraiser is not or no longer valid (maybe due to a missing module/addon). Please select another price source in the BagAppraiser settings or install the needed module/addon for the selected price source.",
+        button1 = OKAY,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true
+      }
+      StaticPopup_Show("BA_INVALID_CUSTOM_PRICESOURCE")
+    end
+	end
+
+	Addon.availablePriceSources = priceSources
+end
+
+-- get available price sources from the different modules
+function private.GetAvailablePriceSources()
+	local priceSources = {}
+
+	-- TSM
+	if Addon.TSM.IsTSMLoaded() then
+		priceSources = Addon.TSM.GetAvailablePriceSources() or {}
+	end
+
+	-- TUJ
+	if TUJMarketInfo then
+		priceSources["globalMedian"] = "TUJ: Global Median"
+		priceSources["globalMean"] = "TUJ: Global Mean"
+		priceSources["globalStdDev"] = "TUJ: Global Std Dev"
+		priceSources["stddev"] = "TUJ: 14-Day Std Dev"
+		priceSources["market"] = "TUJ: 14-Day Price"
+		priceSources["recent"] = "TUJ: 3-Day Price"
+	end
+
+	return priceSources
+end
+
+function private.tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
+function private.startsWith(String,Start)
+  return string.sub(String,1,string.len(Start))==Start
+end
+
+function private.chatCmdShowConfig()
+  -- happens twice because there is a bug in the blizz implementation and the first call doesn't work. subsequent calls do.
+	InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+  InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
 end
