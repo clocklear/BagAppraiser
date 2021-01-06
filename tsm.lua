@@ -15,19 +15,22 @@ function TSM.IsTSMLoaded()
 	return false
 end
 
-function TSM.GetItemValue(itemID, priceSource)
+function TSM.GetItemValue(itemLink, priceSource)
   if TSM_API and TSM_API.GetCustomPriceValue then
-    local itemLink
-
     local newItemID = Addon.PetData.ItemID2Species(itemID) -- battle pet handling
-    if newItemID == itemID then
-      itemLink = "i:" .. tostring(itemID)
-    else
-      itemLink = newItemID
+    if newItemID ~= itemID then
+      return TSM_API.GetCustomPriceValue(priceSource, newItemID)
     end
 
-    return TSM_API.GetCustomPriceValue(priceSource, itemLink) -- "i:" .. tostring(itemID)
-  end 
+    Addon.Debug.Log(format("  TSM_API.ToItemString %s", itemLink))
+    local tsmItemLink = TSM_API.ToItemString(itemLink)
+    if not tsmItemLink then
+      Addon.Debug.Log(format("  Cannot create tsmItemLink for %s, skipping", itemLink))
+      return 0
+    end
+    Addon.Debug.Log(format("  TSM_API.GetCustomPriceValue() %s %s", priceSource, tsmItemLink))
+    return TSM_API.GetCustomPriceValue(priceSource, tsmItemLink)
+  end
 
   return 0
 end

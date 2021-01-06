@@ -38,7 +38,18 @@ local generalOptionsGroup =  {
             Addon:UpdateData()
           end
       end,
-    }
+    },
+    enableMinimapIcon = { type = "toggle", order = 20, name = "Show minimap icon", width = "full",
+        get = function(info) return not Addon.db.profile.minimapIcon.hide end,
+        set = function(info, value)
+            Addon.db.profile.minimapIcon.hide = not value
+            if Addon.db.profile.minimapIcon.hide == true then
+              Addon.icon:Hide(Addon.CONST.METADATA.NAME)
+            else
+              Addon.icon:Show(Addon.CONST.METADATA.NAME)
+            end
+        end,
+    },
   }
 }
 

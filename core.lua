@@ -45,14 +45,14 @@ function Addon:UpdateData()
   -- Iterate personal bags
   for k, v in pairs(private.GetPersonalBagIDs()) do
     local bagValue = private.ValuateBag(k)
-    private.SaveBagValue(k, bagValue)
+    private.SaveBagValue(k, bagValue.value)
   end
 
   -- If at the bank, iterate those bags
   if private.atBank then
     for k, v in pairs(private.GetBankBagIDs()) do
       local bagValue = private.ValuateBag(k)
-      private.SaveBagValue(k, bagValue)
+      private.SaveBagValue(k, bagValue.value)
       private.SaveBankLastUpdated(time())
     end
   end
@@ -91,61 +91,55 @@ function private.OnBankFrameClosed()
 end
 
 function private.ValuateBag(bag)
+  local result = {
+    value = 0,
+    items = {},
+  }
   local size = GetContainerNumSlots(bag);
   local priceSource = Addon.GetFromDb("pricesource", "source")
 	if size > 0 then
-		local value = 0;
 		for slot = 1, size do
 
-      -- Grab the item count and id
-      local id = GetContainerItemID(bag, slot);
-      if id ~= nil then
+      -- Grab the item count and itemlink
+      local itemLink = GetContainerItemLink(bag, slot);
+      if itemLink ~= nil then
         local _, count = GetContainerItemInfo(bag, slot);
-        
         count = count or 0;
         
         -- Use info to lookup value
-        local singleItemValue = private.GetItemValue(id, priceSource) or 0;
+        Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
+        local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
         local totalValue = singleItemValue * count;
-        value = value + totalValue;
+        result.items[itemLink] = {
+          count = count,
+          itemValue = singleItemValue,
+          totalValue = totalValue,
+        };
+        result.value = result.value + totalValue;
       end
 		end
-
-		return value;
-	else
-		return 0;
-	end
+  end
+  return result
 end
 
-function private.GetItemValue(itemID, priceSource)
+function private.GetItemValue(itemLink, priceSource)
 	-- from which addon is our selected price source?
 	if private.startsWith(Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")], "TUJ:") then
 		-- TUJ price source
 		if priceSource == "VendorSell" then
 			-- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
-			local VendorSell =  select(11, GetItemInfo(itemID)) or 0
+			local VendorSell =  select(11, GetItemInfo(itemLink)) or 0
 			Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
 			return VendorSell
 		else
-			local itemLink
-
-			-- battle pet handling
-			local newItemID = Addon.PetData.ItemID2Species(itemID)
-			if newItemID == itemID then
-				itemLink = itemID
-			else
-
-				itemLink = newItemID
-			end
-
 			local priceInfo = {}
-	    	TUJMarketInfo(itemLink, priceInfo)
+	    TUJMarketInfo(itemLink, priceInfo)
 
 			return priceInfo[priceSource]
 		end
 	else
 		-- TSM price source
-		return Addon.TSM.GetItemValue(itemID, priceSource)
+		return Addon.TSM.GetItemValue(itemLink, priceSource)
 	end
 end
 
