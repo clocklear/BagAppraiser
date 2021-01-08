@@ -46,6 +46,7 @@ end
 function Addon:UpdateData()
   local buildTopContributors = Addon.GetFromDb("topContributors", "enabled")
   local topContributorsLimit = Addon.GetFromDb("topContributors", "limit")
+  Addon.Debug.Log("UpdateData() started")
 
   -- Iterate personal bags
   local bagTopContributors = {};
@@ -102,6 +103,8 @@ function Addon:UpdateData()
   end
 
   private.RecalculateTotals();
+
+  Addon.Debug.Log("UpdateData() complete")
 end
 
 function Addon.GetFromDb(grp, key, ...)
@@ -212,19 +215,31 @@ function private.ValuateBag(bag)
         count = count or 0;
         
         -- Use info to lookup value
-        Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
+        -- Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
         local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
         local totalValue = singleItemValue * count;
-        result.items[itemLink] = {
-          count = count,
-          itemValue = singleItemValue,
-          totalValue = totalValue,
-          itemLink = itemLink,
-        };
+        -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
+        -- If the item is already in the result, just increment the count
+        if result.items[itemLink] then
+          -- Addon.Debug.Log(format("  item already in list, adding %d", count))
+          result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
+        else
+          -- Addon.Debug.Log(format("  new item, adding %d", count))
+          -- Otherwise add it
+          result.items[itemLink] = {
+            count = count,
+            itemValue = singleItemValue,
+            totalValue = totalValue,
+            itemLink = itemLink,
+          };
+        end
+        -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
         result.value = result.value + totalValue;
       end
 		end
   end
+  -- Addon.Debug.Log(format(" ValuateBag(): %d", bag))
+  -- Addon.Debug.TableToString(result)
   return result
 end
 
@@ -241,15 +256,22 @@ function private.ValuateGBankTab(tab)
       if count == 0 then
         Addon.Debug.Log("Failed to scan gbank tab %s slot %d", tab, slot)
       else
-        Addon.Debug.Log(format("  private.ValuateGBankTab(): %s %s", itemLink, priceSource))
+        -- Addon.Debug.Log(format("  private.ValuateGBankTab(): %s %s", itemLink, priceSource))
         local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
         local totalValue = singleItemValue * count;
-        result.items[itemLink] = {
-          count = count,
-          itemValue = singleItemValue,
-          totalValue = totalValue,
-          itemLink = itemLink,
-        };
+        if result.items[itemLink] then
+          -- Addon.Debug.Log(format("  item already in list, adding %d", count))
+          result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
+        else
+          -- Addon.Debug.Log(format("  new item, adding %d", count))
+          -- Otherwise add it
+          result.items[itemLink] = {
+            count = count,
+            itemValue = singleItemValue,
+            totalValue = totalValue,
+            itemLink = itemLink,
+          };
+        end
         result.value = result.value + totalValue;
       end
     end
@@ -264,7 +286,7 @@ function private.GetItemValue(itemLink, priceSource)
 		if priceSource == "VendorSell" then
 			-- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
 			local VendorSell =  select(11, GetItemInfo(itemLink)) or 0
-			Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
+			-- Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
 			return VendorSell
 		else
 			local priceInfo = {}
@@ -368,7 +390,7 @@ function private.GetSavedTotalForGBank()
       bagTotal = bagTotal + v;
     end
   end
-  Addon.Debug.Log(format("GetSavedTotalForGBank(): %s", bagTotal))
+  -- Addon.Debug.Log(format("GetSavedTotalForGBank(): %s", bagTotal))
   return bagTotal;
 end
 
