@@ -2,7 +2,7 @@
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v9.0.2-7
+## Version: v9.0.2-8
 ## OptionalDependencies: TradeSkillMaster, TheUndermineJournal
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
