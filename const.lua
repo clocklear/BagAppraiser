@@ -11,6 +11,14 @@ CONST.METADATA = {
     VERSION = GetAddOnMetadata(..., "Version")
 }
 
+CONST.QUALITY_FILTER = { 
+    ["0"] = "|cff9d9d9dPoor|r",
+    ["1"] = "|cffffffffCommon|r",
+    ["2"] = "|cff1eff00Uncommon|r",
+    ["3"] = "|cff0070ddRare|r",
+    ["4"] = "|cffa335eeEpic|r"
+}
+
 -- TSM predefined price sources + 'Custom' + TUJ price sources
 CONST.PRICE_SOURCE = {
     -- TSM price sources
@@ -49,6 +57,10 @@ CONST.DB_DEFAULTS = {
     },
     guildBank = {
       enabled = false,
+    },
+    qualityFilter = {
+      value = "1",
+      enabled = true,
     }
   },
 }

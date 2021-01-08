@@ -18,10 +18,10 @@ local generalOptionsGroup =  {
   order = 10,
   name = "General",
   get = function(info)
-      return Addon.db.profile.general[info[#info]]
+      return Addon.db.profile[info[#info]]
   end,
   set = function(info, value)
-      Addon.db.profile.general[info[#info]] = value;
+      Addon.db.profile[info[#info]] = value;
   end,
   args = {
     source = {
@@ -39,6 +39,7 @@ local generalOptionsGroup =  {
           end
       end,
     },
+    blank1 = { type = "description", order = 13, fontSize = "small", name = " " },
     ldbLabelText = {
       type = "select", order = 15, name = "LDB Label Source", desc = "Controls what is displayed for the addon within LDB host frames.", width = "double",
       values = function() return Addon.CONST.LABEL_SOURCE end,
@@ -52,6 +53,7 @@ local generalOptionsGroup =  {
           end
       end,
     },
+    blank2 = { type = "description", order = 17, fontSize = "small", name = " " },
     enableMinimapIcon = { type = "toggle", order = 20, name = "Show minimap icon", width = "full",
       get = function(info) return not Addon.db.profile.minimapIcon.hide end,
       set = function(info, value)
@@ -63,6 +65,7 @@ local generalOptionsGroup =  {
           end
       end,
     },
+    blank3 = { type = "description", order = 25, fontSize = "small", name = " " },
     showTopContributors = { type = "toggle", order = 30, name = "Show top contributors", desc = "Displays the top 10 unique items contributing to the total value.", width = "full",
       get = function(info) return Addon.GetFromDb("topContributors", "enabled") end,
       set = function(info, value)
@@ -70,6 +73,7 @@ local generalOptionsGroup =  {
           Addon:UpdateData();
       end,
     },
+    blank4 = { type = "description", order = 35, fontSize = "small", name = " " },
     enableGuildBank = { type = "toggle", order = 40, name = "Enable guild bank", desc = "Summarize the contents of the guild bank.  This settings has no effect if you aren't in a guild.", width = "full", 
       get = function(info) return Addon.GetFromDb("guildBank", "enabled") end,
       set = function(info, value)
@@ -77,7 +81,31 @@ local generalOptionsGroup =  {
           Addon:UpdateData();
       end
     },
-    guildBankDisclaimer = { type = "description", order = 50, fontSize = "medium", name = "Enabling the guild bank will include its value anywhere the 'Combined Total' is displayed." }
+    guildBankDisclaimer = { type = "description", order = 50, fontSize = "medium", name = "Enabling the guild bank will include its value anywhere the 'Combined Total' is displayed." },
+    blank5 = { type = "description", order = 55, fontSize = "small", name = " " },
+    enableQualityFilter = { type = "toggle", order = 60, name = "Enable quality filter", desc = "If enables, ignores items below the selected quality", width = "full", 
+      get = function(info) return Addon.GetFromDb("qualityFilter", "enabled") end,
+      set = function(info, value)
+          local oldValue = Addon.GetFromDb("qualityFilter", "enabled");
+          Addon.db.profile.qualityFilter.enabled = value;
+          if oldValue ~= value then
+            Addon:Print(format("Quality Filter %s", value and "enabled" or "disabled"));
+          end
+          Addon:UpdateData();
+      end
+    },
+    qualityFilter = {
+      type = "select", order = 70, name = "Quality Filter", width = "double", desc = "Items below the selected quality will not factor into calculations", values = Addon.CONST.QUALITY_FILTER,
+      get = function(info) return Addon.GetFromDb("qualityFilter", "value") end;
+      set = function(info, value)
+        local oldValue = Addon.GetFromDb("qualityFilter", "value");
+        Addon.db.profile.qualityFilter.value = value;
+        if oldValue ~= value then
+          Addon:Print("Quality Filter set to: " .. Addon.CONST.QUALITY_FILTER[value] .. " and above.");
+        end
+        Addon:UpdateData();
+      end
+    }
   }
 }
 
@@ -102,28 +130,28 @@ local aboutGroup = {
     }
 }
 
-local options = {
-  type = "group",
-  args = {
-    general = { type = "group", name = format("%s %s", Addon.CONST.METADATA.NAME, Addon.CONST.METADATA.VERSION), childGroups = "tab",
-        get = function(info) 
-            return Addon.db.profile[info[#info]]
-          end,
-        set = function(info, value)
-            Addon.db.profile[info[#info]] = value;
-          end,
-        args = {
-          generalOptionsGrp = generalOptionsGroup,
-          aboutGroup = aboutGroup,
-        },
-    },
-  },
-}
+function private.getOptionsTable()
+  local profilesGroup = LibStub("AceDBOptions-3.0"):GetOptionsTable(Addon.db)
+
+  local opts = { type = "group", name = format("%s %s", Addon.CONST.METADATA.NAME, Addon.CONST.METADATA.VERSION), childGroups = "tab",
+      get = function(info) 
+          return Addon.db.profile[info[#info]]
+        end,
+      set = function(info, value)
+          Addon.db.profile[info[#info]] = value;
+        end,
+      args = {
+        generalOptionsGrp = generalOptionsGroup,
+        profilesGrp = profilesGroup,
+        aboutGrp = aboutGroup,
+      },
+  };
+  return opts;
+end
 
 function Config:OnEnable()
   Addon.Debug.Log("Config - Init")
-
-  AceConfigRegistry:RegisterOptionsTable(Addon.CONST.METADATA.NAME, options.args.general)
+  AceConfigRegistry:RegisterOptionsTable(Addon.CONST.METADATA.NAME, private.getOptionsTable)
   local baConfig = AceConfigDialog:AddToBlizOptions(Addon.CONST.METADATA.NAME)
   baConfig.default = private.resetDB
 end

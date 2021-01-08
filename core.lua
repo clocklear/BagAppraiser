@@ -204,42 +204,21 @@ function private.ValuateBag(bag)
     items = {},
   }
   local size = GetContainerNumSlots(bag);
-  local priceSource = Addon.GetFromDb("pricesource", "source")
 	if size > 0 then
 		for slot = 1, size do
 
       -- Grab the item count and itemlink
       local itemLink = GetContainerItemLink(bag, slot);
+      local _, count = GetContainerItemInfo(bag, slot);
+      count = count or 0;
+
       if itemLink then
         -- Lets skip bound items for now
         local isBoundItem = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(bag, slot));
         if isBoundItem then
           Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
-          local _, count = GetContainerItemInfo(bag, slot);
-          count = count or 0;
-          
-          -- Use info to lookup value
-          -- Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
-          local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
-          local totalValue = singleItemValue * count;
-          -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
-          -- If the item is already in the result, just increment the count
-          if result.items[itemLink] then
-            -- Addon.Debug.Log(format("  item already in list, adding %d", count))
-            result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
-          else
-            -- Addon.Debug.Log(format("  new item, adding %d", count))
-            -- Otherwise add it
-            result.items[itemLink] = {
-              count = count,
-              itemValue = singleItemValue,
-              totalValue = totalValue,
-              itemLink = itemLink,
-            };
-          end
-          -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
-          result.value = result.value + totalValue;
+          private.handleItemValuation(itemLink, count, result)
         end 
       end
 		end
@@ -254,35 +233,58 @@ function private.ValuateGBankTab(tab)
     value = 0,
     items = {},
   }
-  local priceSource = Addon.GetFromDb("pricesource", "source")
   for slot = 1, GUILD_BANK_TAB_SLOTS do
     local itemLink = GetGuildBankItemLink(tab, slot)
-    if itemLink then
-      local _, count = GetGuildBankItemInfo(tab, slot)
-      if count == 0 then
-        Addon.Debug.Log("Failed to scan gbank tab %s slot %d", tab, slot)
-      else
-        -- Addon.Debug.Log(format("  private.ValuateGBankTab(): %s %s", itemLink, priceSource))
-        local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
-        local totalValue = singleItemValue * count;
-        if result.items[itemLink] then
-          -- Addon.Debug.Log(format("  item already in list, adding %d", count))
-          result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
-        else
-          -- Addon.Debug.Log(format("  new item, adding %d", count))
-          -- Otherwise add it
-          result.items[itemLink] = {
-            count = count,
-            itemValue = singleItemValue,
-            totalValue = totalValue,
-            itemLink = itemLink,
-          };
-        end
-        result.value = result.value + totalValue;
-      end
+    local _, count = GetGuildBankItemInfo(tab, slot)
+    if itemLink and count > 0 then
+      private.handleItemValuation(itemLink, count, result)
     end
   end
   return result
+end
+
+function private.handleItemValuation(itemLink, count, resultTbl)
+  -- Use info to lookup value
+  local priceSource = Addon.GetFromDb("pricesource", "source");
+  local qualityFilterEnabled = Addon.GetFromDb("qualityFilter", "enabled");
+  local qualityFilterValue = tonumber(Addon.GetFromDb("qualityFilter", "value"));
+  local itemQuality = select(3, GetItemInfo(itemLink)) or 0
+
+  -- Should we consider this items quality?
+  if qualityFilterEnabled then
+    if itemQuality < qualityFilterValue then
+      Addon.Debug.Log(format("  skipping %s because its quality is lower then required", itemLink));
+      return
+    end
+  end
+
+  -- Special handling for poor quality items
+  if itemQuality == 0 then
+    priceSource = "VendorSell"
+  end
+
+  -- Addon.Debug.Log(format("  private.handleItemValuation(): %s %s", itemLink, priceSource))
+  local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
+  local totalValue = singleItemValue * count;
+  
+  -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
+  -- If the item is already in the result, just increment the count
+  if resultTbl.items[itemLink] then
+    -- Addon.Debug.Log(format("  item already in list, adding %d", count))
+    resultTbl.items[itemLink]["count"] = resultTbl.items[itemLink]["count"] + count;
+  else
+    -- Addon.Debug.Log(format("  new item, adding %d", count))
+    -- Otherwise add it
+    resultTbl.items[itemLink] = {
+      count = count,
+      itemValue = singleItemValue,
+      totalValue = totalValue,
+      itemLink = itemLink,
+    };
+  end
+
+  -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
+  resultTbl.value = resultTbl.value + totalValue;
 end
 
 function private.GetItemValue(itemLink, priceSource)
