@@ -211,30 +211,36 @@ function private.ValuateBag(bag)
       -- Grab the item count and itemlink
       local itemLink = GetContainerItemLink(bag, slot);
       if itemLink then
-        local _, count = GetContainerItemInfo(bag, slot);
-        count = count or 0;
-        
-        -- Use info to lookup value
-        -- Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
-        local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
-        local totalValue = singleItemValue * count;
-        -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
-        -- If the item is already in the result, just increment the count
-        if result.items[itemLink] then
-          -- Addon.Debug.Log(format("  item already in list, adding %d", count))
-          result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
+        -- Lets skip bound items for now
+        local isBoundItem = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(bag, slot));
+        if isBoundItem then
+          Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
-          -- Addon.Debug.Log(format("  new item, adding %d", count))
-          -- Otherwise add it
-          result.items[itemLink] = {
-            count = count,
-            itemValue = singleItemValue,
-            totalValue = totalValue,
-            itemLink = itemLink,
-          };
-        end
-        -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
-        result.value = result.value + totalValue;
+          local _, count = GetContainerItemInfo(bag, slot);
+          count = count or 0;
+          
+          -- Use info to lookup value
+          -- Addon.Debug.Log(format("  private.ValuateBag(): %s %s", itemLink, priceSource))
+          local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
+          local totalValue = singleItemValue * count;
+          -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
+          -- If the item is already in the result, just increment the count
+          if result.items[itemLink] then
+            -- Addon.Debug.Log(format("  item already in list, adding %d", count))
+            result.items[itemLink]["count"] = result.items[itemLink]["count"] + count;
+          else
+            -- Addon.Debug.Log(format("  new item, adding %d", count))
+            -- Otherwise add it
+            result.items[itemLink] = {
+              count = count,
+              itemValue = singleItemValue,
+              totalValue = totalValue,
+              itemLink = itemLink,
+            };
+          end
+          -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
+          result.value = result.value + totalValue;
+        end 
       end
 		end
   end
