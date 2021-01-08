@@ -34,22 +34,50 @@ local generalOptionsGroup =  {
           local oldValue = Addon.db.profile.pricesource[info[#info]]
           Addon.db.profile.pricesource[info[#info]] = value;
           if oldValue ~= value then
-            Addon:Print("Price source changed to: " .. value)
-            Addon:UpdateData()
+            Addon:Print("Price source changed to: " .. Addon.CONST.PRICE_SOURCE[value])
+            Addon:UpdateData();
+          end
+      end,
+    },
+    ldbLabelText = {
+      type = "select", order = 15, name = "LDB Label Source", desc = "Controls what is displayed for the addon within LDB host frames.", width = "double",
+      values = function() return Addon.CONST.LABEL_SOURCE end,
+      get = function(info) return Addon.db.profile.ldbsource end,
+      set = function(info, value)
+          local oldValue = Addon.db.profile.ldbsource;
+          Addon.db.profile.ldbsource = value;
+          if oldValue ~= value then
+            Addon:Print("LDB label source changed to: " .. Addon.CONST.LABEL_SOURCE[value]);
+            Addon:UpdateData();
           end
       end,
     },
     enableMinimapIcon = { type = "toggle", order = 20, name = "Show minimap icon", width = "full",
-        get = function(info) return not Addon.db.profile.minimapIcon.hide end,
-        set = function(info, value)
-            Addon.db.profile.minimapIcon.hide = not value
-            if Addon.db.profile.minimapIcon.hide == true then
-              Addon.icon:Hide(Addon.CONST.METADATA.NAME)
-            else
-              Addon.icon:Show(Addon.CONST.METADATA.NAME)
-            end
-        end,
+      get = function(info) return not Addon.db.profile.minimapIcon.hide end,
+      set = function(info, value)
+          Addon.db.profile.minimapIcon.hide = not value
+          if Addon.db.profile.minimapIcon.hide == true then
+            Addon.icon:Hide(Addon.CONST.METADATA.NAME)
+          else
+            Addon.icon:Show(Addon.CONST.METADATA.NAME)
+          end
+      end,
     },
+    showTopContributors = { type = "toggle", order = 30, name = "Show top contributors", desc = "Displays the top 10 unique items contributing to the total value.", width = "full",
+      get = function(info) return Addon.GetFromDb("topContributors", "enabled") end,
+      set = function(info, value)
+          Addon.db.profile.topContributors.enabled = value
+          Addon:UpdateData();
+      end,
+    },
+    enableGuildBank = { type = "toggle", order = 40, name = "Enable guild bank", desc = "Summarize the contents of the guild bank.  This settings has no effect if you aren't in a guild.", width = "full", 
+      get = function(info) return Addon.GetFromDb("guildBank", "enabled") end,
+      set = function(info, value)
+          Addon.db.profile.guildBank.enabled = value;
+          Addon:UpdateData();
+      end
+    },
+    guildBankDisclaimer = { type = "description", order = 50, fontSize = "medium", name = "Enabling the guild bank will include its value anywhere the 'Combined Total' is displayed." }
   }
 }
 
@@ -65,7 +93,11 @@ local aboutGroup = {
       },
       blank1 = { type = "description", order = 50, fontSize = "small",name = "",width = "full", },
       generalText3 = {
-        type = "description", order = 60, fontSize = "medium", name = "Thanks to ProfitzTV and Testerle for their work on LootAppraiser; this addon borrows heavily from their work.  I learned a lot from them."
+        type = "description", order = 53, fontSize = "medium", name = "Thanks to /r/woweconomy for the support and the great feature ideas."
+      },
+      blank2 = { type = "description", order = 56, fontSize = "small",name = "",width = "full", },
+      generalText4 = {
+        type = "description", order = 60, fontSize = "medium", name = "Special thanks to ProfitzTV and Testerle for their work on LootAppraiser; this addon borrows heavily from their work.  I'm standing on the shoulders of giants."
       }
     }
 }

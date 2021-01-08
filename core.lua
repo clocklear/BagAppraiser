@@ -1,10 +1,9 @@
 local ADDON_NAME = ...;
 local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0");
 
--- todo: allow for changing this via a fancy UI
-local defaultPriceSource = "DBMarket";
 local private = {
   atBank = false,
+  atGuildBank = false,
 }
 
 local currentCharacter = UnitName("player")
@@ -13,6 +12,7 @@ local currentAccount = THIS_ACCOUNT
 
 local FIRST_BANK_SLOT = 1 + NUM_BAG_SLOTS
 local LAST_BANK_SLOT = NUM_BANKBAGSLOTS + NUM_BAG_SLOTS
+local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
 
 local AddonDB_Defaults = {
 	global = {
@@ -37,31 +37,71 @@ function Addon:OnEnable()
   Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
   Addon:RegisterEvent("BANKFRAME_OPENED", private.OnBankFrameOpened)
   Addon:RegisterEvent("BANKFRAME_CLOSED", private.OnBankFrameClosed)
+  Addon:RegisterEvent("GUILDBANKFRAME_OPENED", private.OnGuildBankFrameOpened)
+  Addon:RegisterEvent("GUILDBANKFRAME_CLOSED", private.OnGuildBankFrameClosed)
 
-  Addon:Print(format("%s loaded", Addon.CONST.METADATA.VERSION))
+  Addon:Print(format("%s loaded.  Type '/ba' to open the config.", Addon.CONST.METADATA.VERSION))
 end
 
 function Addon:UpdateData()
+  local buildTopContributors = Addon.GetFromDb("topContributors", "enabled")
+  local topContributorsLimit = Addon.GetFromDb("topContributors", "limit")
+
   -- Iterate personal bags
+  local bagTopContributors = {};
   for k, v in pairs(private.GetPersonalBagIDs()) do
     local bagValue = private.ValuateBag(k)
-    private.SaveBagValue(k, bagValue.value)
+    private.SaveValue("Bag", k, bagValue.value)
+    if buildTopContributors then
+      private.insertContributors(bagTopContributors, bagValue.items)
+    end
+  end
+  if buildTopContributors then
+    private.persistTopContributors("Bag", bagTopContributors, topContributorsLimit)
   end
 
   -- If at the bank, iterate those bags
   if private.atBank then
+    local bankTopContributors = {};
     for k, v in pairs(private.GetBankBagIDs()) do
       local bagValue = private.ValuateBag(k)
-      private.SaveBagValue(k, bagValue.value)
+      private.SaveValue("Bag", k, bagValue.value)
       private.SaveBankLastUpdated(time())
+      if buildTopContributors then
+        private.insertContributors(bankTopContributors, bagValue.items)
+      end
+    end
+    if buildTopContributors then
+      private.persistTopContributors("Bank", bankTopContributors, topContributorsLimit)
     end
   end
 
-  private.RecalculateTotals();
+  -- If at the gbank and option is enabled, iterate those bags
+  if private.atGuildBank and Addon.GetFromDb("guildBank", "enabled") then
+    local gbankTopContributors = {};
+    for tab = 1, GetNumGuildBankTabs() do
+      local tabValue = private.ValuateGBankTab(tab)
+      private.SaveValue("GBankTab", tab, tabValue.value)
+      private.SaveGBankLastUpdated(time())
+      if buildTopContributors then
+        private.insertContributors(gbankTopContributors, tabValue.items) 
+      end
+    end
+    if buildTopContributors then
+      private.persistTopContributors("GuildBank", gbankTopContributors, topContributorsLimit)
+    end
+  end
+
   local bankLastUpdated = private.GetBankLastUpdated();
   if bankLastUpdated then
     Addon:UpdateBankLastUpdatedText(date("%x %X", bankLastUpdated))
   end
+  local gbankLastUpdated = private.GetGBankLastUpdated();
+  if gbankLastUpdated then
+    Addon:UpdateGBankLastUpdatedText(date("%x %X", gbankLastUpdated));
+  end
+
+  private.RecalculateTotals();
 end
 
 function Addon.GetFromDb(grp, key, ...)
@@ -77,6 +117,62 @@ function Addon.GetFromDb(grp, key, ...)
   return Addon.db.profile[grp][key]
 end
 
+function private.insertContributors(targetTbl, itemsTbl)
+  -- walk the items tbl
+  for itemLink, v in pairs(itemsTbl) do
+    Addon.Debug.Log(format(" insertContributors(): checking %s", itemLink))
+    -- is this item already in the table?
+    if targetTbl[itemLink] then
+      -- increment the existing count
+      Addon.Debug.Log(format(" insertContributors(): appending %dx %s", v.count, itemLink))
+      targetTbl[itemLink].count = targetTbl[itemLink].count + v.count
+    else
+      -- wasnt already in the table, append
+      Addon.Debug.Log(format(" insertContributors(): inserting %dx %s", v.count, itemLink))
+      targetTbl[itemLink] = v
+    end
+  end
+end
+
+function private.persistTopContributors(type, items, limit)
+  -- Convert to a standard integer-indexed array
+  local topContributors = private.convertContributorTableToArray(items);
+  -- Sort by value desc
+  table.sort(topContributors, function (a, b) return a.totalValue > b.totalValue end)
+  -- Take the top N results
+  topContributors = private.limitTopContributors(topContributors, limit);
+  -- Persist
+  private.SetTopContributors(type, topContributors);
+end
+
+function private.convertContributorTableToArray(contributorTbl)
+  local result = {};
+  local idx = 1;
+  for k, v in pairs(contributorTbl) do
+    result[idx] = v;
+    idx = idx + 1;
+  end
+  return result;
+end
+
+function private.limitTopContributors(targetTbl, limit)
+  -- empty array? return
+  local tableLen = table.getn(targetTbl)
+  if tableLen == 0 then
+    return {};
+  end 
+  -- do we have less than 'limit' items? if so, just return what we have
+  if table.getn(targetTbl) <= limit then
+    return targetTbl;
+  end
+  -- limit to top 'limit' results and return
+  local result = {};
+  for i = 1, limit do
+    result[i] = targetTbl[i]
+  end
+  return result
+end
+
 function private.OnBagUpdateDelayed()
   Addon:UpdateData();
 end
@@ -88,6 +184,15 @@ end
 
 function private.OnBankFrameClosed()
   private.atBank = false;
+end
+
+function private.OnGuildBankFrameOpened()
+  private.atGuildBank = true;
+  Addon:UpdateData();
+end
+
+function private.OnGuildBankFrameClosed()
+  private.atGuildBank = false;
 end
 
 function private.ValuateBag(bag)
@@ -102,7 +207,7 @@ function private.ValuateBag(bag)
 
       -- Grab the item count and itemlink
       local itemLink = GetContainerItemLink(bag, slot);
-      if itemLink ~= nil then
+      if itemLink then
         local _, count = GetContainerItemInfo(bag, slot);
         count = count or 0;
         
@@ -114,10 +219,40 @@ function private.ValuateBag(bag)
           count = count,
           itemValue = singleItemValue,
           totalValue = totalValue,
+          itemLink = itemLink,
         };
         result.value = result.value + totalValue;
       end
 		end
+  end
+  return result
+end
+
+function private.ValuateGBankTab(tab)
+  local result = {
+    value = 0,
+    items = {},
+  }
+  local priceSource = Addon.GetFromDb("pricesource", "source")
+  for slot = 1, GUILD_BANK_TAB_SLOTS do
+    local itemLink = GetGuildBankItemLink(tab, slot)
+    if itemLink then
+      local _, count = GetGuildBankItemInfo(tab, slot)
+      if count == 0 then
+        Addon.Debug.Log("Failed to scan gbank tab %s slot %d", tab, slot)
+      else
+        Addon.Debug.Log(format("  private.ValuateGBankTab(): %s %s", itemLink, priceSource))
+        local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
+        local totalValue = singleItemValue * count;
+        result.items[itemLink] = {
+          count = count,
+          itemValue = singleItemValue,
+          totalValue = totalValue,
+          itemLink = itemLink,
+        };
+        result.value = result.value + totalValue;
+      end
+    end
   end
   return result
 end
@@ -152,9 +287,9 @@ function private.GetCharacterTable()
   return Addon.db.global.Characters[charKey];
 end
 
-function private.SaveBagValue(bag, value)
+function private.SaveValue(type, bag, value)
   local charTable = private.GetCharacterTable();
-  local bagKey = format("Bag%s", bag);
+  local bagKey = format("%s%s", type, bag);
   
   charTable[bagKey] = value;
 end
@@ -164,9 +299,29 @@ function private.GetBankLastUpdated()
   return charTable["BankLastUpdated"];
 end
 
+function private.GetGBankLastUpdated()
+  local charTable = private.GetCharacterTable();
+  return charTable["GBankLastUpdated"];
+end
+
 function private.SaveBankLastUpdated(time)
   local charTable = private.GetCharacterTable();
   charTable["BankLastUpdated"] = time;
+end
+
+function private.SaveGBankLastUpdated(time)
+  local charTable = private.GetCharacterTable();
+  charTable["GBankLastUpdated"] = time;
+end
+
+function private.GetTopContributors(type)
+  local charTable = private.GetCharacterTable();
+  return charTable[format("%sTopContributors", type)] or {};
+end
+
+function private.SetTopContributors(type, tbl)
+  local charTable = private.GetCharacterTable();
+  charTable[format("%sTopContributors", type)] = tbl;
 end
 
 function private.GetPersonalBagIDs()
@@ -199,26 +354,69 @@ function private.GetSavedTotalForBags(tbl)
   for k, v in pairs(tbl) do
     local bagKey = format("Bag%s", k);
     if charTable[bagKey] then
-      bagTotal = bagTotal + charTable[bagKey]
+      bagTotal = bagTotal + charTable[bagKey];
     end
   end
   return bagTotal;
 end
 
+function private.GetSavedTotalForGBank()
+  local charTable = private.GetCharacterTable();
+  local bagTotal = 0;
+  for k, v in pairs(charTable) do
+    if k:match("GBankTab.*") then
+      bagTotal = bagTotal + v;
+    end
+  end
+  Addon.Debug.Log(format("GetSavedTotalForGBank(): %s", bagTotal))
+  return bagTotal;
+end
+
 function private.RecalculateTotals()  
+  local ldbLabelSetting = Addon.GetFromDb("ldbsource");
+
   -- Iterate personal bags
-  local bagTotal = private.GetSavedTotalForBags(private.GetPersonalBagIDs())
-  Addon:UpdateBagTotalText(GetMoneyString(bagTotal, true));
+  local bagTotal = private.GetSavedTotalForBags(private.GetPersonalBagIDs());
+  local bagTotalString = GetMoneyString(bagTotal, true);
+  Addon:UpdateBagTotalText(bagTotalString);
+  if ldbLabelSetting == "bagtotal" then
+    Addon:UpdateDataBrokerText(bagTotalString);
+  end
 
   -- Iterate bank bags
-  local bankTotal = private.GetSavedTotalForBags(private.GetBankBagIDs())
-  Addon:UpdateBankTotalText(GetMoneyString(bankTotal, true));
+  local bankTotal = private.GetSavedTotalForBags(private.GetBankBagIDs());
+  local bankTotalString = GetMoneyString(bankTotal, true);
+  Addon:UpdateBankTotalText(bankTotalString);
+  if ldbLabelSetting == "banktotal" then
+    Addon:UpdateDataBrokerText(bankTotalString);
+  end
+
+  -- Iterate GBank bags
+  local gbankTotal = 0;
+  if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
+    gbankTotal = private.GetSavedTotalForGBank()
+    local gbankTotalString = GetMoneyString(gbankTotal, true);
+    Addon:UpdateGBankTotalText(gbankTotalString);
+  end
   
   -- convert to text and update databroker
-  --local grandTotalString = Addon.Money.ToString(bagTotal + bankTotal);
-  local grandTotalString = GetMoneyString(bagTotal + bankTotal, true);
+  local grandTotalString = GetMoneyString(bagTotal + bankTotal + gbankTotal, true);
   Addon:UpdateGrandTotalText(grandTotalString);
-  Addon:UpdateDataBrokerText(grandTotalString);
+  if ldbLabelSetting == "combinedtotal" then
+    Addon:UpdateDataBrokerText(grandTotalString);  
+  end
+
+  -- reload last calculated top contributors, if necessary
+  if Addon.GetFromDb("topContributors", "enabled") then
+    local topContributors = {
+      Bag = private.GetTopContributors("Bag"),
+      Bank = private.GetTopContributors("Bank"),
+      GuildBank = private.GetTopContributors("GuildBank"),
+    }
+    Addon:SetTopContributors(topContributors);
+  else
+    Addon:SetTopContributors({});
+  end
 end
 
 function private.PreparePriceSources()
