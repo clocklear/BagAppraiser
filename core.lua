@@ -223,8 +223,8 @@ function private.ValuateBag(bag)
       end
 		end
   end
-  -- Addon.Debug.Log(format(" ValuateBag(): %d", bag))
-  -- Addon.Debug.TableToString(result)
+  Addon.Debug.Log(format(" ValuateBag(): %d", bag))
+  Addon.Debug.TableToString(result)
   return result
 end
 
@@ -272,6 +272,7 @@ function private.handleItemValuation(itemLink, count, resultTbl)
   if resultTbl.items[itemLink] then
     -- Addon.Debug.Log(format("  item already in list, adding %d", count))
     resultTbl.items[itemLink]["count"] = resultTbl.items[itemLink]["count"] + count;
+    resultTbl.items[itemLink]["totalValue"] = resultTbl.items[itemLink]["totalValue"] + totalValue;
   else
     -- Addon.Debug.Log(format("  new item, adding %d", count))
     -- Otherwise add it
