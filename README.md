@@ -1,6 +1,6 @@
 # BagAppraiser
 
-A libdatabroker plugin that provides valuation of bag contents using TSM data.
+A libdatabroker plugin that provides valuation of bag contents using various pricing sources.
 
 ![BagAppraiser](https://i.imgur.com/Zagxpho.png)
 
