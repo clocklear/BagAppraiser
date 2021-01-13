@@ -39,6 +39,7 @@ local generalOptionsGroup =  {
           end
       end,
     },
+    poorDesc = { type = "description", order = 11, fontSize = "small", name = "|cff9d9d9dPoor|r quality items are always valued with the VendorSell source." },
     blank1 = { type = "description", order = 13, fontSize = "small", name = " " },
     ldbLabelText = {
       type = "select", order = 15, name = "LDB Label Source", desc = "Controls what is displayed for the addon within LDB host frames.", width = "double",
@@ -81,15 +82,20 @@ local generalOptionsGroup =  {
           Addon:UpdateData();
       end
     },
-    guildBankDisclaimer = { type = "description", order = 50, fontSize = "medium", name = "Enabling the guild bank will include its value anywhere the 'Combined Total' is displayed." },
-    blank5 = { type = "description", order = 55, fontSize = "small", name = " " },
-    enableQualityFilter = { type = "toggle", order = 60, name = "Enable quality filter", desc = "If enables, ignores items below the selected quality", width = "full", 
+    guildBankDisclaimer = { type = "description", order = 50, fontSize = "small", name = "Enabling the guild bank will include its value anywhere the 'Combined Total' is displayed." },
+  }
+}
+
+local filterOptionsGroup = {
+  type = "group", order = 15, name = "Filters",
+  args = {
+    enableQualityFilter = { type = "toggle", order = 60, name = "Enable quality filter", desc = "If enabled, ignores items below the selected quality", width = "full", 
       get = function(info) return Addon.GetFromDb("qualityFilter", "enabled") end,
       set = function(info, value)
           local oldValue = Addon.GetFromDb("qualityFilter", "enabled");
           Addon.db.profile.qualityFilter.enabled = value;
           if oldValue ~= value then
-            Addon:Print(format("Quality Filter %s", value and "enabled" or "disabled"));
+            Addon:Print(format("Quality Filter %s", value and "enabled." or "disabled."));
           end
           Addon:UpdateData();
       end
@@ -105,7 +111,72 @@ local generalOptionsGroup =  {
         end
         Addon:UpdateData();
       end
-    }
+    },
+    blank5 = { type = "description", order = 80, fontSize = "small", name = " " },
+    enableIgnoredItems = { type = "toggle", order = 85, name = "Enable item filter", desc = "If enabled, ignores any item added to the ignore list", width = "full", 
+      get = function(info) return Addon.GetFromDb("itemFilter", "enabled") end,
+      set = function(info, value)
+          local oldValue = Addon.GetFromDb("itemFilter", "enabled");
+          Addon.db.profile.itemFilter.enabled = value;
+          if oldValue ~= value then
+            Addon:Print(format("Item Filter %s", value and "enabled." or "disabled."));
+          end
+          Addon:UpdateData();
+      end
+    },
+    blank1 = { type = "description", order = 86, fontSize = "small", name = "To add to the ignore list, drag an item to the button below and click it.  Any item added to the ignore list will be skipped when assessing bag value.  Soulbound items are automatically skipped.  You can remove items by unchecking them inside the ignore list." },
+    add_item = {
+      order = 90,
+      type = "execute",
+      name = "Drag an item here and click to add it.",
+      width = "full",
+      desc = "",
+      descStyle = "inline",
+      func = function()
+        local type, _, link = GetCursorInfo()
+
+        if type == "item" and link then
+          local items = Addon.GetFromDb("itemFilter", "items");
+          for k, v in ipairs(items) do
+            if v == link then
+              Addon:Print(format("%s is already on the ignore list.", link))
+              ClearCursor();
+              return
+            end
+          end
+          table.insert(items, link);
+          Addon:Print(format("Added %s to the ignore list.", link));
+          ClearCursor();
+          Addon:UpdateData();
+        else
+          ClearCursor();
+          Addon:Print("No item detected, so nothing added to the ignore list.");
+        end
+      end
+    },
+    ignoredItems = {
+      order = 100,
+      type = "multiselect",
+      name = "Ignored Items",
+      desc = "Items that should be excluded from valuation",
+      width = "double",
+      values = function()
+        -- Return the list of values
+        return Addon.GetFromDb("itemFilter", "items");
+      end,
+      get = function(info, index)
+        -- All values are always enabled (checked)
+        return true
+      end,
+      set = function(info, index, value)
+        -- Unchecking an item is the only way this gets called, so we remove it the item from the list
+        local items = Addon.GetFromDb("itemFilter", "items");
+        local item = items[index];
+        table.remove(items, index);
+        Addon:Print(format("Removed %s from ignore list.", item));
+        Addon:UpdateData();
+      end
+    },
   }
 }
 
@@ -142,6 +213,7 @@ function private.getOptionsTable()
         end,
       args = {
         generalOptionsGrp = generalOptionsGroup,
+        filterOptionsGroup = filterOptionsGroup,
         profilesGrp = profilesGroup,
         aboutGrp = aboutGroup,
       },

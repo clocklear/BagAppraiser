@@ -4,6 +4,7 @@ local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceC
 local private = {
   atBank = false,
   atGuildBank = false,
+  ignoreSet = {},
 }
 
 local currentCharacter = UnitName("player")
@@ -41,12 +42,24 @@ function Addon:OnEnable()
   Addon:RegisterEvent("GUILDBANKFRAME_CLOSED", private.OnGuildBankFrameClosed)
 
   Addon:Print(format("%s loaded.  Type '/ba' to open the config.", Addon.CONST.METADATA.VERSION))
+  Addon.HandleWhatsNew()
+end
+
+function Addon.HandleWhatsNew()
+  -- Shown ignore list?
+  if not Addon.GetFromDb("newFeatures", "ignoreList") then
+    Addon:Print("NEW -- BagAppraiser now supports ignoring specific items!  Check the config window for more details.")
+    Addon.db.profile.newFeatures.ignoreList = true;
+  end
 end
 
 function Addon:UpdateData()
   local buildTopContributors = Addon.GetFromDb("topContributors", "enabled")
   local topContributorsLimit = Addon.GetFromDb("topContributors", "limit")
   Addon.Debug.Log("UpdateData() started")
+
+  -- Do this one for performance reasons
+  private.ignoreSet = private.getIgnoredItemSet();
 
   -- Iterate personal bags
   local bagTopContributors = {};
@@ -249,6 +262,12 @@ function private.handleItemValuation(itemLink, count, resultTbl)
   local qualityFilterEnabled = Addon.GetFromDb("qualityFilter", "enabled");
   local qualityFilterValue = tonumber(Addon.GetFromDb("qualityFilter", "value"));
   local itemQuality = select(3, GetItemInfo(itemLink)) or 0
+
+  -- Should we consider this item?
+  if private.ignoreSet[itemLink] then
+    Addon.Debug.Log(format("  skipping %s because it's on the item filter list", itemLink));
+    return
+  end
 
   -- Should we consider this items quality?
   if qualityFilterEnabled then
@@ -526,4 +545,16 @@ function private.chatCmdShowConfig()
   -- happens twice because there is a bug in the blizz implementation and the first call doesn't work. subsequent calls do.
 	InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
   InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+end
+
+function private.getIgnoredItemSet()
+  local items = Addon.GetFromDb("itemFilter", "items");
+  local set = {};
+  if not Addon.GetFromDb("itemFilter", "enabled") then
+    return set;
+  end
+  for k, v in ipairs(items) do
+    set[v] = true;
+  end
+  return set;
 end

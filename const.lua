@@ -48,6 +48,7 @@ CONST.LABEL_SOURCE = {
 
 CONST.DB_DEFAULTS = {
   profile = {
+    newFeatures = {},
     minimapIcon = { hide = false, minimapPos = 220, radius = 80, },
     pricesource = { ["source"] = "DBMarket" },
     ldbsource = "combinedtotal",
@@ -61,6 +62,10 @@ CONST.DB_DEFAULTS = {
     qualityFilter = {
       value = "1",
       enabled = true,
-    }
+    },
+    itemFilter = {
+      items = {},
+      enabled = false,
+    },
   },
 }
