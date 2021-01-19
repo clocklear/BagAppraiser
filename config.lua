@@ -197,7 +197,17 @@ local aboutGroup = {
       blank2 = { type = "description", order = 56, fontSize = "small",name = "",width = "full", },
       generalText4 = {
         type = "description", order = 60, fontSize = "medium", name = "Special thanks to ProfitzTV and Testerle for their work on LootAppraiser; this addon borrows heavily from their work.  I'm standing on the shoulders of giants."
-      }
+      },
+      helpHeader = {order = 70, type = "header", name = "Feedback"},
+      generalText5 = {
+        type = "description", order = 80, fontSize = "medium", name = "Need help?  Have a feature request?  Open an issue on the code repository for BagAppraiser or send me a PM on Reddit."
+      },
+      blank3 = { type = "description", order = 90, fontSize = "medium", name = "", width = "full", },
+      generalText6 = { type = "description", order = 100, fontSize = "medium", name = "Issue Tracker:", width = "half", },
+      generalText7 = { type = "description", order = 110, fontSize = "medium", name = "https://github.com/clocklear/BagAppraiser/issues", width = "double", },
+      blank4 = { type = "description", order = 120, fontSize = "small", name = "", width = "full", },
+      generalText8 = { type = "description", order = 130, fontSize = "medium", name = "Reddit:", width = "half", },
+      generalText9 = { type = "description", order = 140, fontSize = "medium", name = "neoeraser (http://reddit.com/u/neoeraser)", width = "double", },
     }
 }
 
