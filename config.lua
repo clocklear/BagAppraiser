@@ -188,7 +188,7 @@ local aboutGroup = {
       },
       thanksHeader = {order = 20, type = "header", name = "Credits", },
       generalText2 = {
-        type = "description", order = 40, fontSize = "medium", name = "Written by clocklear (https://github.com/clocklear)"
+        type = "description", order = 40, fontSize = "medium", name = "Written by clocklear (github.com/clocklear)"
       },
       blank1 = { type = "description", order = 50, fontSize = "small",name = "",width = "full", },
       generalText3 = {
@@ -204,10 +204,10 @@ local aboutGroup = {
       },
       blank3 = { type = "description", order = 90, fontSize = "medium", name = "", width = "full", },
       generalText6 = { type = "description", order = 100, fontSize = "medium", name = "Issue Tracker:", width = "half", },
-      generalText7 = { type = "description", order = 110, fontSize = "medium", name = "https://github.com/clocklear/BagAppraiser/issues", width = "double", },
+      generalText7 = { type = "description", order = 110, fontSize = "medium", name = "github.com/clocklear/BagAppraiser/issues", width = "double", },
       blank4 = { type = "description", order = 120, fontSize = "small", name = "", width = "full", },
       generalText8 = { type = "description", order = 130, fontSize = "medium", name = "Reddit:", width = "half", },
-      generalText9 = { type = "description", order = 140, fontSize = "medium", name = "neoeraser (http://reddit.com/u/neoeraser)", width = "double", },
+      generalText9 = { type = "description", order = 140, fontSize = "medium", name = "neoeraser (reddit.com/u/neoeraser)", width = "double", },
     }
 }
 
