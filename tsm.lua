@@ -17,11 +17,6 @@ end
 
 function TSM.GetItemValue(itemLink, priceSource)
   if TSM_API and TSM_API.GetCustomPriceValue then
-    local newItemID = Addon.PetData.ItemID2Species(itemID) -- battle pet handling
-    if newItemID ~= itemID then
-      return TSM_API.GetCustomPriceValue(priceSource, newItemID)
-    end
-
     -- Addon.Debug.Log(format("  TSM_API.ToItemString %s", itemLink))
     local tsmItemLink = TSM_API.ToItemString(itemLink)
     if not tsmItemLink then
