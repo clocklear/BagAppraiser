@@ -22,12 +22,37 @@ local AddonDB_Defaults = {
 			},
 		},
   },
+  profile = {
+    newFeatures = {},
+    minimapIcon = { hide = false, minimapPos = 220, radius = 80, },
+    pricesource = {
+      source = "DBMarket" 
+    },
+    ldbsource = "combinedtotal",
+    topContributors = {
+      enabled = true,
+      limit = 5,
+    },
+    guildBank = {
+      enabled = false,
+    },
+    qualityFilter = {
+      value = "1",
+      enabled = true,
+    },
+    itemFilter = {
+      items = {},
+      enabled = false,
+    },
+  },
 }
 
 function Addon:OnInitialize()
-  Addon.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", AddonDB_Defaults)
+  Addon.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", AddonDB_Defaults, true) -- set true to prefer 'Default' profile as default
+  Addon.db.RegisterCallback(Addon, "OnProfileChanged", "UpdateData")
+  Addon.db.RegisterCallback(Addon, "OnProfileCopied", "UpdateData")
+  Addon.db.RegisterCallback(Addon, "OnProfileReset", "UpdateData")
   Addon:InitializeDataBroker();
-  -- LibStub("AceConfig-3.0"):RegisterOptionsTable(addonName, options)
 end
 
 function Addon:OnEnable()
@@ -121,15 +146,9 @@ function Addon:UpdateData()
 end
 
 function Addon.GetFromDb(grp, key, ...)
-  if Addon.db.profile[grp] == nil then
-    Addon.db.profile[grp] = Addon.CONST.DB_DEFAULTS.profile[grp]
-  end
   if not key then
     return Addon.db.profile[grp]
   end 
-  if Addon.db.profile[grp][key] == nil then
-    Addon.db.profile[grp][key] = Addon.CONST.DB_DEFAULTS.profile[grp][key]
-  end
   return Addon.db.profile[grp][key]
 end
 
@@ -222,7 +241,7 @@ function private.ValuateBag(bag)
 
       -- Grab the item count and itemlink
       local itemLink = GetContainerItemLink(bag, slot);
-      local _, count = GetContainerItemInfo(bag, slot);
+      local _, count, _, itemQuality = GetContainerItemInfo(bag, slot);
       count = count or 0;
 
       if itemLink then
@@ -231,7 +250,7 @@ function private.ValuateBag(bag)
         if isBoundItem then
           Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
-          private.handleItemValuation(itemLink, count, result)
+          private.handleItemValuation(itemLink, itemQuality, count, result)
         end 
       end
 		end
@@ -248,20 +267,19 @@ function private.ValuateGBankTab(tab)
   }
   for slot = 1, GUILD_BANK_TAB_SLOTS do
     local itemLink = GetGuildBankItemLink(tab, slot)
-    local _, count = GetGuildBankItemInfo(tab, slot)
+    local _, count, _, _, itemQuality = GetGuildBankItemInfo(tab, slot)
     if itemLink and count > 0 then
-      private.handleItemValuation(itemLink, count, result)
+      private.handleItemValuation(itemLink, itemQuality, count, result)
     end
   end
   return result
 end
 
-function private.handleItemValuation(itemLink, count, resultTbl)
+function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
   -- Use info to lookup value
   local priceSource = Addon.GetFromDb("pricesource", "source");
   local qualityFilterEnabled = Addon.GetFromDb("qualityFilter", "enabled");
   local qualityFilterValue = tonumber(Addon.GetFromDb("qualityFilter", "value"));
-  local itemQuality = select(3, GetItemInfo(itemLink)) or 0
 
   -- Should we consider this item?
   if private.ignoreSet[itemLink] then
@@ -277,12 +295,7 @@ function private.handleItemValuation(itemLink, count, resultTbl)
     end
   end
 
-  -- Special handling for poor quality items
-  if itemQuality == 0 then
-    priceSource = "VendorSell"
-  end
-
-  -- Addon.Debug.Log(format("  private.handleItemValuation(): %s %s", itemLink, priceSource))
+  -- Addon.Debug.Log(format("  private.handleItemValuation(): %s %s %s", itemLink, itemQuality, priceSource))
   local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
   local totalValue = singleItemValue * count;
   

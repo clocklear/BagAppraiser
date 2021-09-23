@@ -45,27 +45,3 @@ CONST.LABEL_SOURCE = {
   ["banktotal"] = "Bank Total",
   ["combinedtotal"] = "Combined Total",
 }
-
-CONST.DB_DEFAULTS = {
-  profile = {
-    newFeatures = {},
-    minimapIcon = { hide = false, minimapPos = 220, radius = 80, },
-    pricesource = { ["source"] = "DBMarket" },
-    ldbsource = "combinedtotal",
-    topContributors = {
-      enabled = true,
-      limit = 5,
-    },
-    guildBank = {
-      enabled = false,
-    },
-    qualityFilter = {
-      value = "1",
-      enabled = true,
-    },
-    itemFilter = {
-      items = {},
-      enabled = false,
-    },
-  },
-}

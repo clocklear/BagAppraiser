@@ -243,5 +243,5 @@ function private.resetDB()
 
   Addon.db:ResetProfile(false, true)
 
-  AceConfigRegistry:NotifyChange("LootAppraiser")
+  AceConfigRegistry:NotifyChange("BagAppraiser")
 end
