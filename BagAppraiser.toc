@@ -1,4 +1,4 @@
-## Interface: 90100
+## Interface: 90105
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
