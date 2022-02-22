@@ -1,8 +1,8 @@
-## Interface: 90105
+## Interface: 90200
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v9.1.0-2
+## Version: v9.2.0-1
 ## OptionalDependencies: TradeSkillMaster, TheUndermineJournal
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
