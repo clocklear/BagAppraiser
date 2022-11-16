@@ -239,11 +239,8 @@ function private.ValuateBag(bag)
 	if size > 0 then
 		for slot = 1, size do
 
-      -- Grab the item count and itemlink
+      -- Grab the itemlink
       local itemLink = C_Container.GetContainerItemLink(bag, slot);
-      local _, count, _, itemQuality = C_Container.GetContainerItemInfo(bag, slot);
-      count = count or 0;
-      itemQuality = itemQuality or 0;
 
       if itemLink then
         -- Lets skip bound items for now
@@ -251,6 +248,11 @@ function private.ValuateBag(bag)
         if isBoundItem then
           Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
+          -- Seems like a real item and not soulbound, get info about item and valuate
+          local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
+          local count = containerInfo.stackCount or 0;
+          local itemQuality = containerInfo.quality or 0;
+          
           private.handleItemValuation(itemLink, itemQuality, count, result)
         end 
       end
