@@ -235,14 +235,15 @@ function private.ValuateBag(bag)
     value = 0,
     items = {},
   }
-  local size = GetContainerNumSlots(bag);
+  local size = C_Container.GetContainerNumSlots(bag);
 	if size > 0 then
 		for slot = 1, size do
 
       -- Grab the item count and itemlink
-      local itemLink = GetContainerItemLink(bag, slot);
-      local _, count, _, itemQuality = GetContainerItemInfo(bag, slot);
+      local itemLink = C_Container.GetContainerItemLink(bag, slot);
+      local _, count, _, itemQuality = C_Container.GetContainerItemInfo(bag, slot);
       count = count or 0;
+      itemQuality = itemQuality or 0;
 
       if itemLink then
         -- Lets skip bound items for now
