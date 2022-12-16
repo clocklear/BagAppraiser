@@ -11,8 +11,10 @@ local currentCharacter = UnitName("player")
 local currentRealm = GetRealmName()
 local currentAccount = THIS_ACCOUNT
 
-local FIRST_BANK_SLOT = 1 + NUM_BAG_SLOTS
-local LAST_BANK_SLOT = NUM_BANKBAGSLOTS + NUM_BAG_SLOTS
+local FIRST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER
+local LAST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER+NUM_BAG_SLOTS+1 -- reagent container
+local FIRST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + 1 -- should be 6 in DF
+local LAST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + NUM_BANKBAGSLOTS	
 local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
 
 local AddonDB_Defaults = {
@@ -61,10 +63,22 @@ function Addon:OnEnable()
   Addon:RegisterChatCommand("ba", private.chatCmdShowConfig)
 
   Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
-  Addon:RegisterEvent("BANKFRAME_OPENED", private.OnBankFrameOpened)
-  Addon:RegisterEvent("BANKFRAME_CLOSED", private.OnBankFrameClosed)
-  Addon:RegisterEvent("GUILDBANKFRAME_OPENED", private.OnGuildBankFrameOpened)
-  Addon:RegisterEvent("GUILDBANKFRAME_CLOSED", private.OnGuildBankFrameClosed)
+  Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW", function(event, arg)
+    if arg == 8 then -- bank
+      private.OnBankFrameOpened()
+    end
+    if arg == 10 then -- gbank
+      private.OnGuildBankFrameOpened();
+    end
+  end)
+  Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(event, arg)
+    if arg == 8 then -- bank
+      private.OnBankFrameClosed();
+    end
+    if arg == 10 then -- gbank
+      private.OnGuildBankFrameClosed();
+    end
+  end)
 
   Addon:Print(format("%s loaded.  Type '/ba' to open the config.", Addon.CONST.METADATA.VERSION))
   Addon.HandleWhatsNew()
@@ -119,6 +133,7 @@ function Addon:UpdateData()
   if private.atGuildBank and Addon.GetFromDb("guildBank", "enabled") then
     local gbankTopContributors = {};
     for tab = 1, GetNumGuildBankTabs() do
+      -- Addon.Debug.Log(format("GBANK: evaluate bag %d", tab));
       local tabValue = private.ValuateGBankTab(tab)
       private.SaveValue("GBankTab", tab, tabValue.value)
       private.SaveGBankLastUpdated(time())
@@ -155,15 +170,15 @@ end
 function private.insertContributors(targetTbl, itemsTbl)
   -- walk the items tbl
   for itemLink, v in pairs(itemsTbl) do
-    Addon.Debug.Log(format(" insertContributors(): checking %s", itemLink))
+    -- Addon.Debug.Log(format(" insertContributors(): checking %s", itemLink))
     -- is this item already in the table?
     if targetTbl[itemLink] then
       -- increment the existing count
-      Addon.Debug.Log(format(" insertContributors(): appending %dx %s", v.count, itemLink))
+      -- Addon.Debug.Log(format(" insertContributors(): appending %dx %s", v.count, itemLink))
       targetTbl[itemLink].count = targetTbl[itemLink].count + v.count
     else
       -- wasnt already in the table, append
-      Addon.Debug.Log(format(" insertContributors(): inserting %dx %s", v.count, itemLink))
+      -- Addon.Debug.Log(format(" insertContributors(): inserting %dx %s", v.count, itemLink))
       targetTbl[itemLink] = v
     end
   end
@@ -246,20 +261,20 @@ function private.ValuateBag(bag)
         -- Lets skip bound items for now
         local isBoundItem = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(bag, slot));
         if isBoundItem then
-          Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
+          -- Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
           -- Seems like a real item and not soulbound, get info about item and valuate
           local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
           local count = containerInfo.stackCount or 0;
-          local itemQuality = containerInfo.quality or 0;
+          local itemQuality = containerInfo.quality;
           
           private.handleItemValuation(itemLink, itemQuality, count, result)
         end 
       end
 		end
   end
-  Addon.Debug.Log(format(" ValuateBag(): %d", bag))
-  Addon.Debug.TableToString(result)
+  -- Addon.Debug.Log(format(" ValuateBag(): %d", bag))
+  -- Addon.Debug.TableToString(result)
   return result
 end
 
@@ -272,6 +287,7 @@ function private.ValuateGBankTab(tab)
     local itemLink = GetGuildBankItemLink(tab, slot)
     local _, count, _, _, itemQuality = GetGuildBankItemInfo(tab, slot)
     if itemLink and count > 0 then
+      -- Addon.Debug.Log(format("GBANK: %s has a quality of %d", itemLink, itemQuality));
       private.handleItemValuation(itemLink, itemQuality, count, result)
     end
   end
@@ -286,14 +302,14 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
 
   -- Should we consider this item?
   if private.ignoreSet[itemLink] then
-    Addon.Debug.Log(format("  skipping %s because it's on the item filter list", itemLink));
+    -- Addon.Debug.Log(format("  skipping %s because it's on the item filter list", itemLink));
     return
   end
 
   -- Should we consider this items quality?
   if qualityFilterEnabled then
     if itemQuality < qualityFilterValue then
-      Addon.Debug.Log(format("  skipping %s because its quality is lower then required", itemLink));
+      -- Addon.Debug.Log(format("  skipping %s because its quality is lower then required", itemLink));
       return
     end
   end
@@ -392,7 +408,7 @@ end
 
 function private.GetPersonalBagIDs()
   local arr = {};
-  for i = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+  for i = FIRST_PERSONAL_BAG_SLOT, LAST_PERSONAL_BAG_SLOT do
     arr[i] = 0;
   end
   return arr;
