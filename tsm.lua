@@ -20,7 +20,7 @@ function TSM.GetItemValue(itemLink, priceSource)
     -- Addon.Debug.Log(format("  TSM_API.ToItemString %s", itemLink))
     local tsmItemLink = TSM_API.ToItemString(itemLink)
     if not tsmItemLink then
-      Addon.Debug.Log(format("  Cannot create tsmItemLink for %s, skipping", itemLink))
+      -- Addon.Debug.Log(format("  Cannot create tsmItemLink for %s, skipping", itemLink))
       return 0
     end
     -- Addon.Debug.Log(format("  TSM_API.GetCustomPriceValue() %s %s", priceSource, tsmItemLink))
@@ -31,10 +31,10 @@ function TSM.GetItemValue(itemLink, priceSource)
 end
 
 function TSM.GetAvailablePriceSources()
-	Addon.Debug.Log("tsm.GetAvailablePriceSources()")
+	-- Addon.Debug.Log("tsm.GetAvailablePriceSources()")
 
 	if not TSM.IsTSMLoaded() then
-		Addon.Debug.Log("tsm.GetAvailablePriceSources: TSM not loaded")
+		-- Addon.Debug.Log("tsm.GetAvailablePriceSources: TSM not loaded")
 		return
 	end
 
