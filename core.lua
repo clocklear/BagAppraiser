@@ -266,7 +266,7 @@ function private.ValuateBag(bag)
           -- Seems like a real item and not soulbound, get info about item and valuate
           local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
           local count = containerInfo.stackCount or 0;
-          local itemQuality = containerInfo.quality;
+          local itemQuality = containerInfo.quality or 0;
           
           private.handleItemValuation(itemLink, itemQuality, count, result)
         end 
