@@ -45,3 +45,9 @@ CONST.LABEL_SOURCE = {
   ["banktotal"] = "Bank Total",
   ["combinedtotal"] = "Combined Total",
 }
+
+CONST.MONEY_PRECISION = {
+  [0] = "Full Precision (" .. GetMoneyString(12345678, true) .. ")",
+  [2] = "Nearest Silver (" .. GetMoneyString(12345700, true) .. ")",
+  [4] = "Nearest Gold (" .. GetMoneyString(12350000, true) .. ")",
+}

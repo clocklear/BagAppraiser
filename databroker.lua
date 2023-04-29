@@ -51,9 +51,10 @@ local settings = {
 
 function private.addTopContributorSection(tooltip, source)
   if Addon.GetFromDb("topContributors", "enabled") and topContributors and topContributors[source] and Addon:tableSize(topContributors[source]) > 0 then
+    local precision = Addon.GetFromDb("moneyPrecision", "tooltip")
     tooltip:AddLine(format("Top %d Contributors:", Addon.GetFromDb("topContributors", "limit")))
     for k, v in ipairs(topContributors[source]) do
-      tooltip:AddDoubleLine(format("%s x%d", v.itemLink, v.count), GetMoneyString(v.totalValue, true))
+      tooltip:AddDoubleLine(format("%s x%d", v.itemLink, v.count), GetMoneyString(Addon:round(v.totalValue, precision), true))
     end
     tooltip:AddLine(" ");
   end

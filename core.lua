@@ -5,6 +5,8 @@ local private = {
   atBank = false,
   atGuildBank = false,
   ignoreSet = {},
+  allowedSet = {},
+  useAllowSet = false,
 }
 
 local currentCharacter = UnitName("player")
@@ -12,23 +14,23 @@ local currentRealm = GetRealmName()
 local currentAccount = THIS_ACCOUNT
 
 local FIRST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER
-local LAST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER+NUM_BAG_SLOTS+1 -- reagent container
-local FIRST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + 1 -- should be 6 in DF
-local LAST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + NUM_BANKBAGSLOTS	
-local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
+local LAST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER + NUM_BAG_SLOTS + 1 -- reagent container
+local FIRST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + 1          -- should be 6 in DF
+local LAST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + NUM_BANKBAGSLOTS
+local GUILD_BANK_TAB_SLOTS = 98                                   -- MAX_GUILDBANK_SLOTS_PER_TAB
 
 local AddonDB_Defaults = {
-	global = {
-		Characters = {
-			['*'] = {					-- ["Realm.Name"] 
-			},
-		},
+  global = {
+    Characters = {
+      ['*'] = { -- ["Realm.Name"]
+      },
+    },
   },
   profile = {
     newFeatures = {},
     minimapIcon = { hide = false, minimapPos = 220, radius = 80, },
     pricesource = {
-      source = "DBMarket" 
+      source = "DBMarket"
     },
     ldbsource = "combinedtotal",
     topContributors = {
@@ -46,6 +48,14 @@ local AddonDB_Defaults = {
       items = {},
       enabled = false,
     },
+    itemAllow = {
+      items = {},
+      enabled = false,
+    },
+    moneyPrecision = {
+      ldb = 0,
+      tooltip = 0,
+    }
   },
 }
 
@@ -87,8 +97,13 @@ end
 function Addon.HandleWhatsNew()
   -- Shown ignore list?
   if not Addon.GetFromDb("newFeatures", "ignoreList") then
-    Addon:Print("NEW -- BagAppraiser now supports ignoring specific items!  Check the config window for more details.")
+    Addon:Print("NEW -- BagAppraiser now supports allowlists and blocklists!  Check the config window for more details.")
     Addon.db.profile.newFeatures.ignoreList = true;
+    Addon.db.profile.newFeatures.allowList = true;
+  elseif not Addon.GetFromDb("newFeatures", "allowList") then
+    -- Shown allow list?
+    Addon:Print("NEW -- BagAppraiser now supports allowlists!  Check the config window for more details.")
+    Addon.db.profile.newFeatures.allowList = true;
   end
 end
 
@@ -99,6 +114,8 @@ function Addon:UpdateData()
 
   -- Do this one for performance reasons
   private.ignoreSet = private.getIgnoredItemSet();
+  private.allowedSet = private.getAllowedItemSet();
+  private.useAllowSet = Addon.GetFromDb("itemAllow", "enabled");
 
   -- Iterate personal bags
   local bagTopContributors = {};
@@ -138,7 +155,7 @@ function Addon:UpdateData()
       private.SaveValue("GBankTab", tab, tabValue.value)
       private.SaveGBankLastUpdated(time())
       if buildTopContributors then
-        private.insertContributors(gbankTopContributors, tabValue.items) 
+        private.insertContributors(gbankTopContributors, tabValue.items)
       end
     end
     if buildTopContributors then
@@ -163,7 +180,7 @@ end
 function Addon.GetFromDb(grp, key, ...)
   if not key then
     return Addon.db.profile[grp]
-  end 
+  end
   return Addon.db.profile[grp][key]
 end
 
@@ -188,7 +205,7 @@ function private.persistTopContributors(type, items, limit)
   -- Convert to a standard integer-indexed array
   local topContributors = private.convertContributorTableToArray(items);
   -- Sort by value desc
-  table.sort(topContributors, function (a, b) return a.totalValue > b.totalValue end)
+  table.sort(topContributors, function(a, b) return a.totalValue > b.totalValue end)
   -- Take the top N results
   topContributors = private.limitTopContributors(topContributors, limit);
   -- Persist
@@ -210,7 +227,7 @@ function private.limitTopContributors(targetTbl, limit)
   local tableLen = table.getn(targetTbl)
   if tableLen == 0 then
     return {};
-  end 
+  end
   -- do we have less than 'limit' items? if so, just return what we have
   if table.getn(targetTbl) <= limit then
     return targetTbl;
@@ -251,9 +268,8 @@ function private.ValuateBag(bag)
     items = {},
   }
   local size = C_Container.GetContainerNumSlots(bag);
-	if size > 0 then
-		for slot = 1, size do
-
+  if size > 0 then
+    for slot = 1, size do
       -- Grab the itemlink
       local itemLink = C_Container.GetContainerItemLink(bag, slot);
 
@@ -267,11 +283,11 @@ function private.ValuateBag(bag)
           local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
           local count = containerInfo.stackCount or 0;
           local itemQuality = containerInfo.quality or 0;
-          
+
           private.handleItemValuation(itemLink, itemQuality, count, result)
-        end 
+        end
       end
-		end
+    end
   end
   -- Addon.Debug.Log(format(" ValuateBag(): %d", bag))
   -- Addon.Debug.TableToString(result)
@@ -302,7 +318,12 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
 
   -- Should we consider this item?
   if private.ignoreSet[itemLink] then
-    -- Addon.Debug.Log(format("  skipping %s because it's on the item filter list", itemLink));
+    -- Addon.Debug.Log(format("  skipping %s because it's on the item blocklist", itemLink));
+    return
+  end
+
+  if private.useAllowSet and not private.allowedSet[itemLink] then
+    -- Addon.Debug.Log(format("  skipping %s because it's not on the item allowlist", itemLink));
     return
   end
 
@@ -317,7 +338,7 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
   -- Addon.Debug.Log(format("  private.handleItemValuation(): %s %s %s", itemLink, itemQuality, priceSource))
   local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
   local totalValue = singleItemValue * count;
-  
+
   -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
   -- If the item is already in the result, just increment the count
   if resultTbl.items[itemLink] then
@@ -340,24 +361,24 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
 end
 
 function private.GetItemValue(itemLink, priceSource)
-	-- from which addon is our selected price source?
-	if private.startsWith(Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")], "TUJ:") then
-		-- TUJ price source
-		if priceSource == "VendorSell" then
-			-- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
-			local VendorSell =  select(11, GetItemInfo(itemLink)) or 0
-			-- Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
-			return VendorSell
-		else
-			local priceInfo = {}
-	    TUJMarketInfo(itemLink, priceInfo)
+  -- from which addon is our selected price source?
+  if private.startsWith(Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")], "TUJ:") then
+    -- TUJ price source
+    if priceSource == "VendorSell" then
+      -- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
+      local VendorSell = select(11, GetItemInfo(itemLink)) or 0
+      -- Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
+      return VendorSell
+    else
+      local priceInfo = {}
+      TUJMarketInfo(itemLink, priceInfo)
 
-			return priceInfo[priceSource]
-		end
-	else
-		-- TSM price source
-		return Addon.TSM.GetItemValue(itemLink, priceSource)
-	end
+      return priceInfo[priceSource]
+    end
+  else
+    -- TSM price source
+    return Addon.TSM.GetItemValue(itemLink, priceSource)
+  end
 end
 
 function private.GetCharacterTable()
@@ -372,7 +393,7 @@ end
 function private.SaveValue(type, bag, value)
   local charTable = private.GetCharacterTable();
   local bagKey = format("%s%s", type, bag);
-  
+
   charTable[bagKey] = value;
 end
 
@@ -454,38 +475,52 @@ function private.GetSavedTotalForGBank()
   return bagTotal;
 end
 
-function private.RecalculateTotals()  
+function Addon:round(number, digit_position)
+  local precision = math.pow(10, digit_position)
+  number = number + (precision / 2); -- this causes value #.5 and up to round up
+  -- and #.4 and lower to round down.
+
+  return math.floor(number / precision) * precision
+end
+
+function private.RecalculateTotals()
   local ldbLabelSetting = Addon.GetFromDb("ldbsource");
+  local ldbMoneyPrecision = Addon.GetFromDb("moneyPrecision", "ldb");
+  local tooltipMoneyPrecision = Addon.GetFromDb("moneyPrecision", "tooltip");
+
 
   -- Iterate personal bags
   local bagTotal = private.GetSavedTotalForBags(private.GetPersonalBagIDs());
-  local bagTotalString = GetMoneyString(bagTotal, true);
+  local bagTotalString = GetMoneyString(Addon:round(bagTotal, tooltipMoneyPrecision), true);
   Addon:UpdateBagTotalText(bagTotalString);
   if ldbLabelSetting == "bagtotal" then
-    Addon:UpdateDataBrokerText(bagTotalString);
+    local ldbBagTotalString = GetMoneyString(Addon:round(bagTotal, ldbMoneyPrecision), true);
+    Addon:UpdateDataBrokerText(ldbBagTotalString);
   end
 
   -- Iterate bank bags
   local bankTotal = private.GetSavedTotalForBags(private.GetBankBagIDs());
-  local bankTotalString = GetMoneyString(bankTotal, true);
+  local bankTotalString = GetMoneyString(Addon:round(bankTotal, tooltipMoneyPrecision), true);
   Addon:UpdateBankTotalText(bankTotalString);
   if ldbLabelSetting == "banktotal" then
-    Addon:UpdateDataBrokerText(bankTotalString);
+    local ldbBankTotalString = GetMoneyString(Addon:round(bankTotal, ldbMoneyPrecision), true);
+    Addon:UpdateDataBrokerText(ldbBankTotalString);
   end
 
   -- Iterate GBank bags
   local gbankTotal = 0;
   if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
     gbankTotal = private.GetSavedTotalForGBank()
-    local gbankTotalString = GetMoneyString(gbankTotal, true);
+    local gbankTotalString = GetMoneyString(Addon:round(gbankTotal, tooltipMoneyPrecision), true);
     Addon:UpdateGBankTotalText(gbankTotalString);
   end
-  
+
   -- convert to text and update databroker
-  local grandTotalString = GetMoneyString(bagTotal + bankTotal + gbankTotal, true);
+  local grandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal, tooltipMoneyPrecision), true);
   Addon:UpdateGrandTotalText(grandTotalString);
   if ldbLabelSetting == "combinedtotal" then
-    Addon:UpdateDataBrokerText(grandTotalString);  
+    local ldbGrandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal, ldbMoneyPrecision), true);
+    Addon:UpdateDataBrokerText(grandTotalString);
   end
 
   -- reload last calculated top contributors, if necessary
@@ -505,30 +540,32 @@ function private.PreparePriceSources()
   Addon.Debug.Log("PreparePriceSources()")
 
   -- price source check --
-	local priceSources = private.GetAvailablePriceSources() or {}
+  local priceSources = private.GetAvailablePriceSources() or {}
 
-	-- only 2 or less price sources -> chat msg: missing modules
-	if private.tablelength(priceSources) <= 2 then
-		StaticPopupDialogs["BA_NO_PRICESOURCES"] = {
-			text = "|cffff0000Attention!|r Missing additional addons for price sources (e.g. like TradeSkillMaster or The Undermine Journal).\n\n|cffff0000BagAppraiser disabled.|r",
-			button1 = OKAY,
-			timeout = 0,
-			whileDead = true,
-			hideOnEscape = true
-		}
-		StaticPopup_Show("BA_NO_PRICESOURCES")
+  -- only 2 or less price sources -> chat msg: missing modules
+  if private.tablelength(priceSources) <= 2 then
+    StaticPopupDialogs["BA_NO_PRICESOURCES"] = {
+      text =
+      "|cffff0000Attention!|r Missing additional addons for price sources (e.g. like TradeSkillMaster or The Undermine Journal).\n\n|cffff0000BagAppraiser disabled.|r",
+      button1 = OKAY,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true
+    }
+    StaticPopup_Show("BA_NO_PRICESOURCES")
 
-		Addon:Print("|cffff0000BagAppraiser disabled.|r (see popup window for further details)")
-		Addon:Disable()
-		return
-	else
-		-- current preselected price source
-		local priceSource = Addon.GetFromDb("pricesource", "source")
+    Addon:Print("|cffff0000BagAppraiser disabled.|r (see popup window for further details)")
+    Addon:Disable()
+    return
+  else
+    -- current preselected price source
+    local priceSource = Addon.GetFromDb("pricesource", "source")
 
     -- normal price source check against prepared list
     if not priceSources[priceSource] then
       StaticPopupDialogs["BA_INVALID_CUSTOM_PRICESOURCE"] = {
-        text = "|cffff0000Attention!|r Your selected price source in BagAppraiser is not or no longer valid (maybe due to a missing module/addon). Please select another price source in the BagAppraiser settings or install the needed module/addon for the selected price source.",
+        text =
+        "|cffff0000Attention!|r Your selected price source in BagAppraiser is not or no longer valid (maybe due to a missing module/addon). Please select another price source in the BagAppraiser settings or install the needed module/addon for the selected price source.",
         button1 = OKAY,
         timeout = 0,
         whileDead = true,
@@ -536,31 +573,31 @@ function private.PreparePriceSources()
       }
       StaticPopup_Show("BA_INVALID_CUSTOM_PRICESOURCE")
     end
-	end
+  end
 
-	Addon.availablePriceSources = priceSources
+  Addon.availablePriceSources = priceSources
 end
 
 -- get available price sources from the different modules
 function private.GetAvailablePriceSources()
-	local priceSources = {}
+  local priceSources = {}
 
-	-- TSM
-	if Addon.TSM.IsTSMLoaded() then
-		priceSources = Addon.TSM.GetAvailablePriceSources() or {}
-	end
+  -- TSM
+  if Addon.TSM.IsTSMLoaded() then
+    priceSources = Addon.TSM.GetAvailablePriceSources() or {}
+  end
 
-	-- TUJ
-	if TUJMarketInfo then
-		priceSources["globalMedian"] = "TUJ: Global Median"
-		priceSources["globalMean"] = "TUJ: Global Mean"
-		priceSources["globalStdDev"] = "TUJ: Global Std Dev"
-		priceSources["stddev"] = "TUJ: 14-Day Std Dev"
-		priceSources["market"] = "TUJ: 14-Day Price"
-		priceSources["recent"] = "TUJ: 3-Day Price"
-	end
+  -- TUJ
+  if TUJMarketInfo then
+    priceSources["globalMedian"] = "TUJ: Global Median"
+    priceSources["globalMean"] = "TUJ: Global Mean"
+    priceSources["globalStdDev"] = "TUJ: Global Std Dev"
+    priceSources["stddev"] = "TUJ: 14-Day Std Dev"
+    priceSources["market"] = "TUJ: 14-Day Price"
+    priceSources["recent"] = "TUJ: 3-Day Price"
+  end
 
-	return priceSources
+  return priceSources
 end
 
 function private.tablelength(T)
@@ -569,22 +606,34 @@ function private.tablelength(T)
   return count
 end
 
-function private.startsWith(String,Start)
-  return string.sub(String,1,string.len(Start))==Start
+function private.startsWith(String, Start)
+  return string.sub(String, 1, string.len(Start)) == Start
 end
 
 function private.chatCmdShowConfig()
   -- happens twice because there is a bug in the blizz implementation and the first call doesn't work. subsequent calls do.
-	InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+  InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
   InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
 end
 
 function private.getIgnoredItemSet()
-  local items = Addon.GetFromDb("itemFilter", "items");
   local set = {};
   if not Addon.GetFromDb("itemFilter", "enabled") then
     return set;
   end
+  local items = Addon.GetFromDb("itemFilter", "items");
+  for k, v in ipairs(items) do
+    set[v] = true;
+  end
+  return set;
+end
+
+function private.getAllowedItemSet()
+  local set = {};
+  if not Addon.GetFromDb("itemAllow", "enabled") then
+    return set;
+  end
+  local items = Addon.GetFromDb("itemAllow", "items");
   for k, v in ipairs(items) do
     set[v] = true;
   end
