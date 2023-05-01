@@ -329,6 +329,7 @@ function Config:OnEnable()
   AceConfigRegistry:RegisterOptionsTable(Addon.CONST.METADATA.NAME, private.getOptionsTable)
   local baConfig = AceConfigDialog:AddToBlizOptions(Addon.CONST.METADATA.NAME)
   baConfig.default = private.resetDB
+  Addon.Debug.Log("Config - Complete")
 end
 
 function private.resetDB()

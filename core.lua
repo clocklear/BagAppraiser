@@ -9,15 +9,35 @@ local private = {
   useAllowSet = false,
 }
 
+local wowVersionString, wowBuild, _, wowTOC = GetBuildInfo()
+local isRetail = WOW_PROJECT_ID == (WOW_PROJECT_MAINLINE or 1)
+local isClassic = WOW_PROJECT_ID == (WOW_PROJECT_CLASSIC or 2)
+local isBCC = WOW_PROJECT_ID == (WOW_PROJECT_BURNING_CRUSADE_CLASSIC or 5)
+local isWrath = WOW_PROJECT_ID == (WOW_PROJECT_WRATH_CLASSIC or 11)
+
 local currentCharacter = UnitName("player")
 local currentRealm = GetRealmName()
 local currentAccount = THIS_ACCOUNT
 
+local totalBagSlots = (NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS) -- NUM_TOTAL_EQUIPPED_BAG_SLOTS doesn't exist in classic
 local FIRST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER
 local LAST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER + NUM_BAG_SLOTS + 1 -- reagent container
-local FIRST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + 1          -- should be 6 in DF
-local LAST_BANK_SLOT = NUM_TOTAL_EQUIPPED_BAG_SLOTS + NUM_BANKBAGSLOTS
-local GUILD_BANK_TAB_SLOTS = 98                                   -- MAX_GUILDBANK_SLOTS_PER_TAB
+local FIRST_BANK_SLOT =
+    totalBagSlots +
+    1                           -- should be 6 in DF
+local LAST_BANK_SLOT = totalBagSlots + NUM_BANKBAGSLOTS
+local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
+
+local getContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
+local getContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
+local getContainerItemInfo = function(bag, slot)
+  if GetContainerItemInfo then
+    local _, count, _, itemQuality = GetContainerItemInfo(bag, slot);
+    return count or 0, itemQuality or 0
+  end
+  local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
+  return itemInfo.stackCount or 0, itemInfo.quality or 0
+end
 
 local AddonDB_Defaults = {
   global = {
@@ -60,11 +80,13 @@ local AddonDB_Defaults = {
 }
 
 function Addon:OnInitialize()
+  Addon.Debug.Log("Addon - Init")
   Addon.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", AddonDB_Defaults, true) -- set true to prefer 'Default' profile as default
   Addon.db.RegisterCallback(Addon, "OnProfileChanged", "UpdateData")
   Addon.db.RegisterCallback(Addon, "OnProfileCopied", "UpdateData")
   Addon.db.RegisterCallback(Addon, "OnProfileReset", "UpdateData")
   Addon:InitializeDataBroker();
+  Addon.Debug.Log("Addon - Complete")
 end
 
 function Addon:OnEnable()
@@ -72,23 +94,38 @@ function Addon:OnEnable()
 
   Addon:RegisterChatCommand("ba", private.chatCmdShowConfig)
 
-  Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
-  Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW", function(event, arg)
-    if arg == 8 then -- bank
-      private.OnBankFrameOpened()
-    end
-    if arg == 10 then -- gbank
-      private.OnGuildBankFrameOpened();
-    end
-  end)
-  Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(event, arg)
-    if arg == 8 then -- bank
-      private.OnBankFrameClosed();
-    end
-    if arg == 10 then -- gbank
-      private.OnGuildBankFrameClosed();
-    end
-  end)
+  if isClassic or isBCC then
+    Addon:RegisterEvent("BAG_UPDATE", private.OnBagUpdateDelayed)
+  end
+  if isWrath or isRetail then
+    Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
+  end
+
+  if isRetail or isWrath then
+    Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW", function(event, arg)
+      if arg == 8 then -- bank
+        private.OnBankFrameOpened()
+      end
+      if arg == 10 then -- gbank
+        private.OnGuildBankFrameOpened();
+      end
+    end)
+    Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(event, arg)
+      if arg == 8 then -- bank
+        private.OnBankFrameClosed();
+      end
+      if arg == 10 then -- gbank
+        private.OnGuildBankFrameClosed();
+      end
+    end)
+  end
+
+  if isClassic or isBCC then
+    Addon:RegisterEvent("BANKFRAME_OPENED", private.OnBankFrameOpened)
+    Addon:RegisterEvent("BANKFRAME_CLOSED", private.OnBankFrameClosed)
+    Addon:RegisterEvent("GUILDBANKFRAME_OPENED", private.OnGuildBankFrameOpened)
+    Addon:RegisterEvent("GUILDBANKFRAME_CLOSED", private.OnGuildBankFrameClosed)
+  end
 
   Addon:Print(format("%s loaded.  Type '/ba' to open the config.", Addon.CONST.METADATA.VERSION))
   Addon.HandleWhatsNew()
@@ -267,11 +304,11 @@ function private.ValuateBag(bag)
     value = 0,
     items = {},
   }
-  local size = C_Container.GetContainerNumSlots(bag);
+  local size = getContainerNumSlots(bag);
   if size > 0 then
     for slot = 1, size do
       -- Grab the itemlink
-      local itemLink = C_Container.GetContainerItemLink(bag, slot);
+      local itemLink = getContainerItemLink(bag, slot);
 
       if itemLink then
         -- Lets skip bound items for now
@@ -280,10 +317,7 @@ function private.ValuateBag(bag)
           -- Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
         else
           -- Seems like a real item and not soulbound, get info about item and valuate
-          local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
-          local count = containerInfo.stackCount or 0;
-          local itemQuality = containerInfo.quality or 0;
-
+          local count, itemQuality = getContainerItemInfo(bag, slot);
           private.handleItemValuation(itemLink, itemQuality, count, result)
         end
       end
@@ -339,7 +373,7 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
   local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
   local totalValue = singleItemValue * count;
 
-  -- Addon.Debug.Log(format("  found %d %s", count, itemLink));
+  Addon.Debug.Log(format("  found %d %s", count, itemLink));
   -- If the item is already in the result, just increment the count
   if resultTbl.items[itemLink] then
     -- Addon.Debug.Log(format("  item already in list, adding %d", count))
