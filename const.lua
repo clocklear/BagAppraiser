@@ -1,4 +1,6 @@
 local Addon = select(2, ...)
+local ADDON_NAME = ...;
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME);
 
 -- wow api
 local GetAddOnMetadata, UIParent = GetAddOnMetadata, UIParent
@@ -7,47 +9,47 @@ local CONST = {}
 Addon.CONST = CONST
 
 CONST.METADATA = {
-    NAME = GetAddOnMetadata(..., "Title"),
-    VERSION = GetAddOnMetadata(..., "Version")
+  NAME = GetAddOnMetadata(..., "Title"),
+  VERSION = GetAddOnMetadata(..., "Version")
 }
 
-CONST.QUALITY_FILTER = { 
-    ["0"] = "|cff9d9d9dPoor|r",
-    ["1"] = "|cffffffffCommon|r",
-    ["2"] = "|cff1eff00Uncommon|r",
-    ["3"] = "|cff0070ddRare|r",
-    ["4"] = "|cffa335eeEpic|r"
+CONST.QUALITY_FILTER = {
+  ["0"] = "|cff9d9d9d" .. L["poor"] .. "|r",
+  ["1"] = "|cffffffff" .. L["common"] .. "|r",
+  ["2"] = "|cff1eff00" .. L["uncommon"] .. "|r",
+  ["3"] = "|cff0070dd" .. L["rare"] .. "|r",
+  ["4"] = "|cffa335ee" .. L["epic"] .. "|r"
 }
 
 -- TSM predefined price sources + 'Custom' + TUJ price sources
 CONST.PRICE_SOURCE = {
-    -- TSM price sources
-    ["DBHistorical"] = "TSM: Historical Price",
-    ["DBMarket"] = "TSM: Market Value",
-    ["DBMinBuyout"] = "TSM: Min Buyout",
-    ["DBRegionHistorical"] = "TSM: Region Historical Price",
-    ["DBRegionMarketAvg"] = "TSM: Region Market Value Avg",
-    ["DBRegionMinBuyoutAvg"] = "TSM: Region Min Buyout Avg",
-    ["DBRegionSaleAvg"] = "TSM: Region Global Sale Average",
-    ["VendorSell"] = "TSM: VendorSell",
+  -- TSM price sources
+  ["DBHistorical"] = "TSM: " .. L["historical_price"],
+  ["DBMarket"] = "TSM: " .. L["market_value"],
+  ["DBMinBuyout"] = "TSM: " .. L["min_buyout"],
+  ["DBRegionHistorical"] = "TSM: " .. L["region_historical_price"],
+  ["DBRegionMarketAvg"] = "TSM: " .. L["region_market_value_avg"],
+  ["DBRegionMinBuyoutAvg"] = "TSM: " .. L["region_min_buyout_avg"],
+  ["DBRegionSaleAvg"] = "TSM: " .. L["region_global_sale_average"],
+  ["VendorSell"] = "TSM: " .. L["vendorsell"],
 
-    -- TUJ price sources
-    ["globalMedian"] = "TUJ: Regional Median",
-    ["globalMean"] = "TUJ: Regional Mean",
-    ["globalStdDev"] = "TUJ: Regional Std Dev",
-    ["stddev"] = "TUJ: 14-Day Std Dev",
-    ["market"] = "TUJ: 14-Day Price",
-    ["recent"] = "TUJ: 3-Day Price",
+  -- TUJ price sources
+  ["globalMedian"] = "TUJ: " .. L["globalMedian"],
+  ["globalMean"] = "TUJ: " .. L["globalMean"],
+  ["globalStdDev"] = "TUJ: " .. L["globalStdDev"],
+  ["stddev"] = "TUJ: " .. L["stddev"],
+  ["market"] = "TUJ: " .. L["market"],
+  ["recent"] = "TUJ: " .. L["recent"],
 }
 
 CONST.LABEL_SOURCE = {
-  ["bagtotal"] = "Bag Total",
-  ["banktotal"] = "Bank Total",
-  ["combinedtotal"] = "Combined Total",
+  ["bagtotal"] = L["bagtotal"],
+  ["banktotal"] = L["banktotal"],
+  ["combinedtotal"] = L["combinedtotal"],
 }
 
 CONST.MONEY_PRECISION = {
-  [0] = "Full Precision (" .. GetMoneyString(12345678, true) .. ")",
-  [2] = "Nearest Silver (" .. GetMoneyString(12345700, true) .. ")",
-  [4] = "Nearest Gold (" .. GetMoneyString(12350000, true) .. ")",
+  [0] = L["precision_full"] .. " (" .. GetMoneyString(12345678, true) .. ")",
+  [2] = L["precision_silver"] .. " (" .. GetMoneyString(12345700, true) .. ")",
+  [4] = L["precision_gold"] .. " (" .. GetMoneyString(12350000, true) .. ")",
 }
