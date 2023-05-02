@@ -1,5 +1,6 @@
 local ADDON_NAME = ...;
 local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0");
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME);
 
 local private = {
   atBank = false,
@@ -127,20 +128,28 @@ function Addon:OnEnable()
     Addon:RegisterEvent("GUILDBANKFRAME_CLOSED", private.OnGuildBankFrameClosed)
   end
 
-  Addon:Print(format("%s loaded.  Type '/ba' to open the config.", Addon.CONST.METADATA.VERSION))
+  Addon:Print(format(L["welcome_message"], Addon.CONST.METADATA.VERSION))
   Addon.HandleWhatsNew()
 end
 
 function Addon.HandleWhatsNew()
   -- Shown ignore list?
   if not Addon.GetFromDb("newFeatures", "ignoreList") then
-    Addon:Print("NEW -- BagAppraiser now supports allowlists and blocklists!  Check the config window for more details.")
+    Addon:Print(L["feature_filter"])
     Addon.db.profile.newFeatures.ignoreList = true;
     Addon.db.profile.newFeatures.allowList = true;
   elseif not Addon.GetFromDb("newFeatures", "allowList") then
     -- Shown allow list?
-    Addon:Print("NEW -- BagAppraiser now supports allowlists!  Check the config window for more details.")
+    Addon:Print(L["feature_allowlist"]);
     Addon.db.profile.newFeatures.allowList = true;
+  end
+
+  -- Advertised classic?
+  if not Addon.GetFromDb("newFeatures", "classicSupport") then
+    if isRetail then
+      Addon:Print(L["feature_classic"]);
+    end
+    Addon.db.profile.newFeatures.classicSupport = true;
   end
 end
 
@@ -580,16 +589,16 @@ function private.PreparePriceSources()
   if private.tablelength(priceSources) <= 2 then
     StaticPopupDialogs["BA_NO_PRICESOURCES"] = {
       text =
-      "|cffff0000Attention!|r Missing additional addons for price sources (e.g. like TradeSkillMaster or The Undermine Journal).\n\n|cffff0000BagAppraiser disabled.|r",
+          L["no_price_sources"],
       button1 = OKAY,
       timeout = 0,
       whileDead = true,
       hideOnEscape = true
     }
-    StaticPopup_Show("BA_NO_PRICESOURCES")
+    StaticPopup_Show("BA_NO_PRICESOURCES");
 
-    Addon:Print("|cffff0000BagAppraiser disabled.|r (see popup window for further details)")
-    Addon:Disable()
+    Addon:Print(L["addon_disabled"]);
+    Addon:Disable();
     return
   else
     -- current preselected price source
@@ -599,7 +608,7 @@ function private.PreparePriceSources()
     if not priceSources[priceSource] then
       StaticPopupDialogs["BA_INVALID_CUSTOM_PRICESOURCE"] = {
         text =
-        "|cffff0000Attention!|r Your selected price source in BagAppraiser is not or no longer valid (maybe due to a missing module/addon). Please select another price source in the BagAppraiser settings or install the needed module/addon for the selected price source.",
+            L["missing_price_source"],
         button1 = OKAY,
         timeout = 0,
         whileDead = true,
@@ -623,12 +632,12 @@ function private.GetAvailablePriceSources()
 
   -- TUJ
   if TUJMarketInfo then
-    priceSources["globalMedian"] = "TUJ: Global Median"
-    priceSources["globalMean"] = "TUJ: Global Mean"
-    priceSources["globalStdDev"] = "TUJ: Global Std Dev"
-    priceSources["stddev"] = "TUJ: 14-Day Std Dev"
-    priceSources["market"] = "TUJ: 14-Day Price"
-    priceSources["recent"] = "TUJ: 3-Day Price"
+    priceSources["globalMedian"] = "TUJ: " .. L["globalMedian"];
+    priceSources["globalMean"] = "TUJ: " .. L["globalMean"];
+    priceSources["globalStdDev"] = "TUJ: " .. L["globalStdDev"];
+    priceSources["stddev"] = "TUJ: " .. L["stddev"];
+    priceSources["market"] = "TUJ: " .. L["market"];
+    priceSources["recent"] = "TUJ: " .. L["recent"];
   end
 
   return priceSources
