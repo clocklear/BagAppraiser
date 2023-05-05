@@ -1,4 +1,4 @@
-## Interface: 100007
+## Interface: 100100
 ## Interface-Retail: 100007
 ## Interface-Classic: 11403
 ## Interface-BCC: 20504
@@ -6,7 +6,7 @@
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v10.0.7-3
+## Version: v10.1.0-1
 ## OptionalDependencies: TradeSkillMaster, TheUndermineJournal
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
