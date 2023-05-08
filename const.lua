@@ -21,7 +21,6 @@ CONST.QUALITY_FILTER = {
   ["4"] = "|cffa335ee" .. L["epic"] .. "|r"
 }
 
--- TSM predefined price sources + 'Custom' + TUJ price sources
 CONST.PRICE_SOURCE = {
   -- TSM price sources
   ["DBHistorical"] = "TSM: " .. L["historical_price"],
@@ -33,13 +32,19 @@ CONST.PRICE_SOURCE = {
   ["DBRegionSaleAvg"] = "TSM: " .. L["region_global_sale_average"],
   ["VendorSell"] = "TSM: " .. L["vendorsell"],
 
-  -- TUJ price sources
-  ["globalMedian"] = "TUJ: " .. L["globalMedian"],
-  ["globalMean"] = "TUJ: " .. L["globalMean"],
-  ["globalStdDev"] = "TUJ: " .. L["globalStdDev"],
-  ["stddev"] = "TUJ: " .. L["stddev"],
-  ["market"] = "TUJ: " .. L["market"],
-  ["recent"] = "TUJ: " .. L["recent"],
+  -- OE price sources
+  ["OERealm"] = "OE: " .. L["realm_price"],
+  ["OERegion"] = "OE: " .. L["region_price"],
+
+  -- AHDB price sources
+  ["AHDBMinBid"] = "AHDB: " .. L["min_bid"],
+  ["AHDBMinBuyout"] = "AHDB: " .. L["min_buyout"],
+
+  -- ATR price sources
+  ["ATRMarket"] = "ATR: " .. L["auction_value"],
+
+  -- AUC price sources
+  ["AUCMarket"] = "AUC: " .. L["market_value"],
 }
 
 CONST.LABEL_SOURCE = {

@@ -5,8 +5,6 @@ L["feature_filter"] =
 "NEW -- BagAppraiser now supports allowlists and blocklists!  Check the config window for more details.";
 L["feature_allowlist"] = "NEW -- BagAppraiser now supports allowlists!  Check the config window for more details.";
 L["feature_classic"] = "NEW -- BagAppraiser now supports Classic Era and Wrath!";
-L["no_price_sources"] =
-"|cffff0000Attention!|r Missing additional addons for price sources (e.g. like TradeSkillMaster or The Undermine Journal).\n\n|cffff0000BagAppraiser disabled.|r";
 L["addon_disabled"] = "|cffff0000BagAppraiser disabled.|r (see popup window for further details)";
 L["missing_price_source"] =
 "|cffff0000Attention!|r Your selected price source in BagAppraiser is not or no longer valid (maybe due to a missing module/addon). Please select another price source in the BagAppraiser settings or install the needed module/addon for the selected price source.";
@@ -98,3 +96,16 @@ L["need_help"] =
 "Need help?  Have a feature request?  Open an issue on the code repository for BagAppraiser or send me a PM on Reddit.";
 L["issue_tracker"] = "Issue Tracker:";
 L["feedback"] = "Feedback";
+L["tsm"] = "TradeSkillMaster"
+L["oe"] = "Oribos Exchange"
+L["ahdb"] = "Auction House Database"
+L["atr"] = "Auctionator"
+L["realm_price"] = "Realm Price";
+L["region_price"] = "Region Price";
+L["disabled_instructions"] =
+"BagAppraiser is running in disabled mode because a suitable pricing source cannot be found.  You can fix this by installing one of the following addons:"
+L["min_bid"] = "Minimum Bid";
+L["min_buyout"] = "Minimum Buyout";
+L["no_price_sources"] =
+"|cffff0000Attention!|r Missing additional addons for price sources.  See the addon configuration panel for more details.\n\n|cffff0000BagAppraiser disabled.|r";
+L["auction_value"] = "Auction Value";

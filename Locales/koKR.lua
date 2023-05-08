@@ -6,8 +6,6 @@ L["feature_filter"] =
 "NEW -- BagAppraiser 이제 허용 목록 및 차단 목록을 지원합니다! 설정 창에서 자세한 정보를 확인하세요.";
 L["feature_allowlist"] = "NEW -- BagAppraiser 이제 허용 목록을 지원합니다! 설정 창에서 자세한 정보를 확인하세요.";
 L["feature_classic"] = "NEW -- BagAppraiser 이제 Classic Era와 Wrath를 지원합니다!";
-L["no_price_sources"] =
-"|cffff0000주의!|r 가격 출처에 대한 추가 애드온이 없습니다 (예: TradeSkillMaster 또는 The Undermine Journal).\n\n|cffff0000BagAppraiser 비활성화.|r";
 L["addon_disabled"] = "|cffff0000BagAppraiser 비활성화.|r (팝업 창에서 자세한 정보를 확인하십시오)";
 L["missing_price_source"] =
 "|cffff0000주의!|r BagAppraiser에서 선택한 가격 출처가 유효하지 않거나 더 이상 유효하지 않습니다 (누락된 모듈/애드온 때문일 수 있음). BagAppraiser 설정에서 다른 가격 출처를 선택하거나 선택한 가격 출처에 필요한 모듈/애드온을 설치하십시오.";
@@ -96,3 +94,11 @@ L["need_help"] =
 "도움이 필요하십니까? 기능 요청이 있으십니까? BagAppraiser 코드 저장소에 문제를 제기하거나 Reddit에서 PM을 보내주세요.";
 L["issue_tracker"] = "문제 추적기:";
 L["feedback"] = "피드백";
+L["realm_price"] = "서버 가격";
+L["region_price"] = "지역 가격";
+L["disabled_instructions"] =
+"BagAppraiser는 적합한 가격 출처를 찾을 수 없기 때문에 비활성 모드로 실행 중입니다. 다음 애드온 중 하나를 설치하여 이 문제를 해결할 수 있습니다:"
+L["min_bid"] = "최소 입찰가";
+L["min_buyout"] = "최소 즉시 구매가";
+L["no_price_sources"] =
+"|cffff0000주의!|r 가격 출처를 위한 추가 애드온이 없습니다. 애드온 구성 패널에서 자세한 내용을 확인하세요.\n\n|cffff0000BagAppraiser 비활성화.|r";

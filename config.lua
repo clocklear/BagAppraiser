@@ -9,22 +9,12 @@ local private = {}
 
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-local AceGUI = LibStub("AceGUI-3.0")
 
 -- the config tabs
------------------------------------------
---TAB:  GENERAL
------------------------------------------
 local generalOptionsGroup = {
   type = "group",
   order = 10,
   name = "General",
-  get = function(info)
-    return Addon.db.profile[info[#info]]
-  end,
-  set = function(info, value)
-    Addon.db.profile[info[#info]] = value;
-  end,
   args = {
     opt01 = {
       type = "select",
@@ -34,11 +24,11 @@ local generalOptionsGroup = {
       width = "double",
       values = function() return Addon.availablePriceSources end,
       get = function(info)
-        return Addon.db.profile.pricesource[info[#info]]
+        return Addon.GetFromDb("pricesource", "source")
       end,
       set = function(info, value)
-        local oldValue = Addon.db.profile.pricesource[info[#info]]
-        Addon.db.profile.pricesource[info[#info]] = value;
+        local oldValue = Addon.GetFromDb("pricesource", "source")
+        Addon.db.profile.pricesource.source = value;
         if oldValue ~= value then
           Addon:Print(L["price_source_changed"] .. Addon.CONST.PRICE_SOURCE[value])
           Addon:UpdateData();
@@ -147,6 +137,50 @@ local generalOptionsGroup = {
         Addon.db.profile.moneyPrecision.tooltip = value;
         Addon:UpdateData();
       end,
+    },
+  }
+}
+
+local disabledInstructionsGroup = {
+  type = "group",
+  order = 10,
+  name = "Instructions",
+  args = {
+    generalText1 = {
+      type = "description",
+      order = 10,
+      fontSize = "medium",
+      name = L["disabled_instructions"],
+      width = "full"
+    },
+    blank = { type = "description", order = 11, fontSize = "small", name = " " },
+    generalText2 = {
+      type = "description",
+      order = 12,
+      fontSize = "medium",
+      name = "- " .. L["tsm"],
+      width = "full"
+    },
+    generalText3 = {
+      type = "description",
+      order = 13,
+      fontSize = "medium",
+      name = "- " .. L["oe"],
+      width = "full"
+    },
+    -- generalText4 = {
+    --   type = "description",
+    --   order = 14,
+    --   fontSize = "medium",
+    --   name = "- " .. L["ahdb"],
+    --   width = "full"
+    -- },
+    generalText5 = {
+      type = "description",
+      order = 15,
+      fontSize = "medium",
+      name = "- " .. L["atr"],
+      width = "full"
     },
   }
 }
@@ -409,6 +443,17 @@ local aboutGroup = {
 function private.getOptionsTable()
   local profilesGroup = LibStub("AceDBOptions-3.0"):GetOptionsTable(Addon.db)
 
+  local pages = {};
+  if Addon:IsEnabled() then
+    pages['generalOptionsGrp'] = generalOptionsGroup;
+    pages['filterOptionsGroup'] = filterOptionsGroup;
+    pages['profilesGrp'] = profilesGroup;
+    pages['aboutGroup'] = aboutGroup;
+  else
+    pages['disabledInstructionsGrp'] = disabledInstructionsGroup;
+    pages['aboutGroup'] = aboutGroup;
+  end
+
   local opts = {
     type = "group",
     name = format("%s %s", Addon.CONST.METADATA.NAME, Addon.CONST.METADATA.VERSION),
@@ -419,12 +464,7 @@ function private.getOptionsTable()
     set = function(info, value)
       Addon.db.profile[info[#info]] = value;
     end,
-    args = {
-      generalOptionsGrp = generalOptionsGroup,
-      filterOptionsGroup = filterOptionsGroup,
-      profilesGrp = profilesGroup,
-      aboutGrp = aboutGroup,
-    },
+    args = pages,
   };
   return opts;
 end

@@ -7,8 +7,6 @@ L["feature_filter"] =
 L["feature_allowlist"] =
 "NOVO -- BagAppraiser agora suporta listas de permissão!  Verifique a janela de configuração para obter mais detalhes.";
 L["feature_classic"] = "NOVO -- BagAppraiser agora suporta Classic Era e Wrath!";
-L["no_price_sources"] =
-"|cffff0000Atenção!|r Faltam addons adicionais para fontes de preços (por exemplo, como TradeSkillMaster ou The Undermine Journal).\n\n|cffff0000BagAppraiser desativado.|r";
 L["addon_disabled"] = "|cffff0000BagAppraiser desativado.|r (veja a janela pop-up para obter mais detalhes)";
 L["missing_price_source"] =
 "|cffff0000Atenção!|r A fonte de preços selecionada no BagAppraiser não é válida ou não é mais válida (talvez devido a um módulo/addon ausente). Selecione outra fonte de preços nas configurações do BagAppraiser ou instale o módulo/addon necessário para a fonte de preços selecionada.";
@@ -101,3 +99,11 @@ L["need_help"] =
 "Precisa de ajuda? Tem uma solicitação de recurso? Abra um problema no repositório de código para BagAppraiser ou envie-me uma PM no Reddit.";
 L["issue_tracker"] = "Rastreador de problemas:";
 L["feedback"] = "Feedback";
+L["realm_price"] = "Preço do Reino";
+L["region_price"] = "Preço da Região";
+L["disabled_instructions"] =
+"BagAppraiser está funcionando no modo desativado porque não foi encontrada uma fonte de preços adequada. Você pode resolver isso instalando um dos seguintes addons:"
+L["min_bid"] = "Lance mínimo";
+L["min_buyout"] = "Arremate mínimo";
+L["no_price_sources"] =
+"|cffff0000Atenção!|r Addons adicionais ausentes para fontes de preços. Consulte o painel de configuração do addon para mais detalhes.\n\n|cffff0000BagAppraiser desativado.|r";
