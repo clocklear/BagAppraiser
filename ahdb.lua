@@ -4,13 +4,23 @@ local AHDB = {}
 Addon.AHDB = AHDB
 
 function AHDB.IsLoaded()
-  -- TODO: figure out how to make AHDB work
+  if AuctionDB and AuctionDB.AHGetAuctionInfoByLink then
+    return true
+  end
   return false
 end
 
 function AHDB.GetItemValue(itemLink, priceSource)
   if not AHDB.IsLoaded() then
     return 0
+  end
+
+  local res = AuctionDB:AHGetAuctionInfoByLink(itemLink)
+
+  if priceSource == "AHDBMinBid" and res['minBid'] then
+    return res['minBid']
+  elseif priceSource == "AHDBMinBuyout" and res['minBuyout'] then
+    return res['minBuyout']
   end
 
   -- failsafe

@@ -16,7 +16,6 @@ L["rare"] = "희귀";
 L["epic"] = "영웅";
 L["historical_price"] = "역사적 가격";
 L["market_value"] = "시장 가치";
-L["min_buyout"] = "최소 구매";
 L["region_historical_price"] = "지역 역사 가격";
 L["region_market_value_avg"] = "지역 시장 가치 평균";
 L["region_min_buyout_avg"] = "지역 최소 구매 평균";
@@ -102,3 +101,7 @@ L["min_bid"] = "최소 입찰가";
 L["min_buyout"] = "최소 즉시 구매가";
 L["no_price_sources"] =
 "|cffff0000주의!|r 가격 출처를 위한 추가 애드온이 없습니다. 애드온 구성 패널에서 자세한 내용을 확인하세요.\n\n|cffff0000BagAppraiser 비활성화.|r";
+L["feature_localization"] =
+"새로운 기능 -- BagAppraiser 이제 지역화 지원 기능! 다양한 모국어를 지원합니다."
+L["feature_pricing_sources"] =
+"새로운 기능 -- TSM 외에도 BagAppraiser는 이제 Auction House DataBase, Auctionator 및 Oribos Exchange를 대체 가격 소스로 지원합니다."
