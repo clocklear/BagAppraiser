@@ -151,6 +151,18 @@ function Addon.HandleWhatsNew()
     end
     Addon.db.profile.newFeatures.classicSupport = true;
   end
+
+  -- Advertised localizations?
+  if not Addon.GetFromDb("newFeatures", "localization") then
+    Addon:Print(L["feature_localization"]);
+    Addon.db.profile.localization = true;
+  end
+
+  -- Advertised additional price sources?
+  if not Addon.GetFromDb("newFeatures", "expandedPricingSources") then
+    Addon:Print(L["feature_pricing_sources"]);
+    Addon.db.profile.expandedPricingSources = true;
+  end
 end
 
 function Addon:UpdateData()
@@ -403,20 +415,6 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
   resultTbl.value = resultTbl.value + totalValue;
 end
 
-function private.GetItemValue(itemLink, priceSource)
-  -- from which addon is our selected price source?
-  local selectedPriceSource = Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")]
-  if private.startsWith(selectedPriceSource, "TUJ:") then
-    return Addon.TUJ.GetItemValue(itemLink, priceSource)
-  elseif private.startsWith(selectedPriceSource, "OE:") then
-    return Addon.OE.GetItemValue(itemLink, priceSource)
-  elseif private.startsWith(selectedPriceSource, "ATR:") then
-    return Addon.ATR.GetItemValue(itemLink, priceSource)
-  else
-    return Addon.TSM.GetItemValue(itemLink, priceSource)
-  end
-end
-
 function private.GetCharacterTable()
   -- determine where we should be looking for this data
   local charKey = format("%s.%s", currentRealm, currentCharacter)
@@ -617,46 +615,6 @@ function private.PreparePriceSources()
   Addon.availablePriceSources = priceSources
 end
 
--- get available price sources from the different modules
-function private.GetAvailablePriceSources()
-  local priceSources = {}
-
-  -- TSM
-  if Addon.TSM.IsLoaded() then
-    local ps = Addon.TSM.GetAvailablePriceSources() or {}
-    for k, v in pairs(ps) do
-      priceSources[k] = v
-    end
-  end
-
-  -- Oribos Exchange
-  if Addon.OE.IsLoaded() then
-    local ps = Addon.OE.GetAvailablePriceSources() or {}
-    for k, v in pairs(ps) do
-      priceSources[k] = v
-    end
-  end
-
-  -- Auctionator
-  if Addon.ATR.IsLoaded() then
-    local ps = Addon.ATR.GetAvailablePriceSources() or {}
-    for k, v in pairs(ps) do
-      priceSources[k] = v
-    end
-  end
-
-  -- TUJ
-  if Addon.TUJ.IsLoaded() then
-    local ps = Addon.TUJ.GetAvailablePriceSources() or {}
-    for k, v in pairs(ps) do
-      priceSources[k] = v
-    end
-  end
-
-  -- Addon.Debug.TableToString(priceSources);
-  return priceSources
-end
-
 function private.tablelength(T)
   local count = 0
   for _ in pairs(T) do count = count + 1 end
@@ -695,4 +653,69 @@ function private.getAllowedItemSet()
     set[v] = true;
   end
   return set;
+end
+
+-- get available price sources from the different modules
+function private.GetAvailablePriceSources()
+  local priceSources = {}
+
+  -- TSM
+  if Addon.TSM.IsLoaded() then
+    local ps = Addon.TSM.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- Oribos Exchange
+  if Addon.OE.IsLoaded() then
+    local ps = Addon.OE.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- Auctionator
+  if Addon.ATR.IsLoaded() then
+    local ps = Addon.ATR.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- AHDB
+  if Addon.AHDB.IsLoaded() then
+    local ps = Addon.AHDB.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- TUJ
+  if Addon.TUJ.IsLoaded() then
+    local ps = Addon.TUJ.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- Addon.Debug.TableToString(priceSources);
+  return priceSources
+end
+
+-- Valuate with selected pricing source
+function private.GetItemValue(itemLink, priceSource)
+  -- from which addon is our selected price source?
+  local selectedPriceSource = Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")]
+  if private.startsWith(selectedPriceSource, "TUJ:") then
+    return Addon.TUJ.GetItemValue(itemLink, priceSource)
+  elseif private.startsWith(selectedPriceSource, "OE:") then
+    return Addon.OE.GetItemValue(itemLink, priceSource)
+  elseif private.startsWith(selectedPriceSource, "ATR:") then
+    return Addon.ATR.GetItemValue(itemLink, priceSource)
+  elseif private.startsWith(selectedPriceSource, "AHDB:") then
+    return Addon.AHDB.GetItemValue(itemLink, priceSource)
+  else
+    return Addon.TSM.GetItemValue(itemLink, priceSource)
+  end
 end

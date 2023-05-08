@@ -168,13 +168,13 @@ local disabledInstructionsGroup = {
       name = "- " .. L["oe"],
       width = "full"
     },
-    -- generalText4 = {
-    --   type = "description",
-    --   order = 14,
-    --   fontSize = "medium",
-    --   name = "- " .. L["ahdb"],
-    --   width = "full"
-    -- },
+    generalText4 = {
+      type = "description",
+      order = 14,
+      fontSize = "medium",
+      name = "- " .. L["ahdb"],
+      width = "full"
+    },
     generalText5 = {
       type = "description",
       order = 15,

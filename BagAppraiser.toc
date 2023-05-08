@@ -5,8 +5,8 @@
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v10.1.0-3
-## OptionalDependencies: TradeSkillMaster, OribosExchange, Auctionator
+## Version: v10.1.0-4
+## OptionalDependencies: TradeSkillMaster, OribosExchange, Auctionator, AuctionDB
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
 ## X-Curse-Project-ID: 434007
@@ -35,7 +35,8 @@ config.lua
 databroker.lua
 debug.lua
 
-tsm.lua
-oe.lua
-tuj.lua
+ahdb.lua
 atr.lua
+oe.lua
+tsm.lua
+tuj.lua

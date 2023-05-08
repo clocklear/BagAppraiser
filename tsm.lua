@@ -43,10 +43,24 @@ function TSM.GetAvailablePriceSources()
   local tsmPriceSources = {}
   TSM_API.GetPriceSourceKeys(tsmPriceSources)
 
+  -- TSM registers price sources from other addons
+  -- so lets filter to only the ones we should
+  -- know about
+  local validSources = {
+    ["DBHistorical"] = true,
+    ["DBMarket"] = true,
+    ["DBMinBuyout"] = true,
+    ["DBRegionHistorical"] = true,
+    ["DBRegionMarketAvg"] = true,
+    ["DBRegionMinBuyoutAvg"] = true,
+    ["DBRegionSaleAvg"] = true,
+    ["VendorSell"] = true,
+  }
+
   for k, v in pairs(tsmPriceSources) do
-    if Addon.CONST.PRICE_SOURCE[k] then
+    if Addon.CONST.PRICE_SOURCE[k] and validSources[k] then
       table.insert(keys, k)
-    elseif Addon.CONST.PRICE_SOURCE[v] then
+    elseif Addon.CONST.PRICE_SOURCE[v] and validSources[v] then
       table.insert(keys, v)
     end
   end

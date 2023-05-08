@@ -17,7 +17,6 @@ L["rare"] = "Raro";
 L["epic"] = "Épico";
 L["historical_price"] = "Precio histórico";
 L["market_value"] = "Valor de mercado";
-L["min_buyout"] = "Compra mínima";
 L["region_historical_price"] = "Precio histórico de la región";
 L["region_market_value_avg"] = "Promedio del valor de mercado de la región";
 L["region_min_buyout_avg"] = "Promedio de compra mínima de la región";
@@ -108,3 +107,7 @@ L["min_bid"] = "Puja mínima";
 L["min_buyout"] = "Compra mínima";
 L["no_price_sources"] =
 "|cffff0000¡Atención!|r Faltan addons adicionales para fuentes de precios. Consulta el panel de configuración del addon para más detalles.\n\n|cffff0000BagAppraiser deshabilitado.|r";
+L["feature_localization"] =
+"¡NUEVO -- BagAppraiser ahora incluye soporte de localización! Se admiten una amplia gama de idiomas nativos."
+L["feature_pricing_sources"] =
+"¡NUEVO -- Además de TSM, BagAppraiser ahora admite Auction House DataBase, Auctionator y Oribos Exchange como fuentes de precios alternativas."

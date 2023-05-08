@@ -16,7 +16,6 @@ L["rare"] = "精良";
 L["epic"] = "史詩";
 L["historical_price"] = "歷史價格";
 L["market_value"] = "市場價值";
-L["min_buyout"] = "最低直購價";
 L["region_historical_price"] = "地區歷史價格";
 L["region_market_value_avg"] = "地區市場價值平均";
 L["region_min_buyout_avg"] = "地區最低直購價平均";
@@ -98,3 +97,7 @@ L["min_bid"] = "最低競價";
 L["min_buyout"] = "最低一口價";
 L["no_price_sources"] =
 "|cffff0000注意！|r 缺少價格來源的附加插件。請查看插件配置面板以獲取更多詳細信息。\n\n|cffff0000BagAppraiser已停用.|r";
+L["feature_localization"] =
+"新功能 -- BagAppraiser 現在支援本地化功能！擁有更多原生語言支援。"
+L["feature_pricing_sources"] =
+"新功能 -- 除了 TSM，BagAppraiser 現在還支援拍賣行資料庫、Auctionator 和 Oribos Exchange 作為替代價格來源。"
