@@ -11,7 +11,7 @@
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
 ## X-Curse-Project-ID: 434007
 ## X-WoWI-ID: 25863
-## X-Wago-ID: as3Dfg57
+## X-Wago-ID: WL6JjW6v
 ## X-Localizations: enUS, itIT, deDE, ruRU, koKR, frFR, esES, esMX, zhTW, ptBR, zhCN
 
 libs\LibStub\LibStub.lua
