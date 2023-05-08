@@ -405,21 +405,14 @@ end
 
 function private.GetItemValue(itemLink, priceSource)
   -- from which addon is our selected price source?
-  if private.startsWith(Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")], "TUJ:") then
-    -- TUJ price source
-    if priceSource == "VendorSell" then
-      -- if we use TUJ and need 'VendorSell' we have to query the ItemInfo to get the price
-      local VendorSell = select(11, GetItemInfo(itemLink)) or 0
-      -- Addon.Debug.Log("  GetItemValue: special handling for TUJ and pricesource 'VendorSell': " .. tostring(VendorSell))
-      return VendorSell
-    else
-      local priceInfo = {}
-      TUJMarketInfo(itemLink, priceInfo)
-
-      return priceInfo[priceSource]
-    end
+  local selectedPriceSource = Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")]
+  if private.startsWith(selectedPriceSource, "TUJ:") then
+    return Addon.TUJ.GetItemValue(itemLink, priceSource)
+  elseif private.startsWith(selectedPriceSource, "OE:") then
+    return Addon.OE.GetItemValue(itemLink, priceSource)
+  elseif private.startsWith(selectedPriceSource, "ATR:") then
+    return Addon.ATR.GetItemValue(itemLink, priceSource)
   else
-    -- TSM price source
     return Addon.TSM.GetItemValue(itemLink, priceSource)
   end
 end
@@ -563,7 +556,7 @@ function private.RecalculateTotals()
   Addon:UpdateGrandTotalText(grandTotalString);
   if ldbLabelSetting == "combinedtotal" then
     local ldbGrandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal, ldbMoneyPrecision), true);
-    Addon:UpdateDataBrokerText(grandTotalString);
+    Addon:UpdateDataBrokerText(ldbGrandTotalString);
   end
 
   -- reload last calculated top contributors, if necessary
@@ -584,9 +577,10 @@ function private.PreparePriceSources()
 
   -- price source check --
   local priceSources = private.GetAvailablePriceSources() or {}
+  Addon.Debug.Log(format("loaded %d price sources", private.tablelength(priceSources)));
 
   -- only 2 or less price sources -> chat msg: missing modules
-  if private.tablelength(priceSources) <= 2 then
+  if private.tablelength(priceSources) < 1 then
     StaticPopupDialogs["BA_NO_PRICESOURCES"] = {
       text =
           L["no_price_sources"],
@@ -618,6 +612,8 @@ function private.PreparePriceSources()
     end
   end
 
+  -- sort the list of price sources
+  table.sort(priceSources, function(k1, k2) return priceSources[k1] < priceSources[k2] end)
   Addon.availablePriceSources = priceSources
 end
 
@@ -626,20 +622,38 @@ function private.GetAvailablePriceSources()
   local priceSources = {}
 
   -- TSM
-  if Addon.TSM.IsTSMLoaded() then
-    priceSources = Addon.TSM.GetAvailablePriceSources() or {}
+  if Addon.TSM.IsLoaded() then
+    local ps = Addon.TSM.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- Oribos Exchange
+  if Addon.OE.IsLoaded() then
+    local ps = Addon.OE.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
+  end
+
+  -- Auctionator
+  if Addon.ATR.IsLoaded() then
+    local ps = Addon.ATR.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
   end
 
   -- TUJ
-  if TUJMarketInfo then
-    priceSources["globalMedian"] = "TUJ: " .. L["globalMedian"];
-    priceSources["globalMean"] = "TUJ: " .. L["globalMean"];
-    priceSources["globalStdDev"] = "TUJ: " .. L["globalStdDev"];
-    priceSources["stddev"] = "TUJ: " .. L["stddev"];
-    priceSources["market"] = "TUJ: " .. L["market"];
-    priceSources["recent"] = "TUJ: " .. L["recent"];
+  if Addon.TUJ.IsLoaded() then
+    local ps = Addon.TUJ.GetAvailablePriceSources() or {}
+    for k, v in pairs(ps) do
+      priceSources[k] = v
+    end
   end
 
+  -- Addon.Debug.TableToString(priceSources);
   return priceSources
 end
 
