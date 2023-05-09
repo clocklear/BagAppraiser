@@ -19,6 +19,7 @@ L["region_historical_price"] = "Region Historical Price";
 L["region_market_value_avg"] = "Region Market Value Avg";
 L["region_min_buyout_avg"] = "Region Min Buyout Avg";
 L["region_global_sale_average"] = "Region Global Sale Average";
+L["recent_value"] = "Recent Market Value";
 L["vendorsell"] = "VendorSell";
 L["globalMedian"] = "Regional Median";
 L["globalMean"] = "Regional Mean";

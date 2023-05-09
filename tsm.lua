@@ -54,6 +54,7 @@ function TSM.GetAvailablePriceSources()
     ["DBRegionMarketAvg"] = true,
     ["DBRegionMinBuyoutAvg"] = true,
     ["DBRegionSaleAvg"] = true,
+    ["DBRecent"] = true,
     ["VendorSell"] = true,
   }
 

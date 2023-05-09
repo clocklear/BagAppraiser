@@ -30,6 +30,7 @@ CONST.PRICE_SOURCE = {
   ["DBRegionMarketAvg"] = "TSM: " .. L["region_market_value_avg"],
   ["DBRegionMinBuyoutAvg"] = "TSM: " .. L["region_min_buyout_avg"],
   ["DBRegionSaleAvg"] = "TSM: " .. L["region_global_sale_average"],
+  ["DBRecent"] = "TSM: " .. L["recent_value"],
   ["VendorSell"] = "TSM: " .. L["vendorsell"],
 
   -- OE price sources
