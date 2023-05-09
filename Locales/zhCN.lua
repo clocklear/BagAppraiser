@@ -112,3 +112,4 @@ L["guild_bank_last_updated"] = "公会银行最后更新";
 L["open_options"] = "|cFFFFFFCC左键点击|r打开选项窗口";
 L["top_contributors"] = "前%d名贡献者";
 L["text_display"] = "文字显示";
+L["recent_value"] = "近期市场价值";

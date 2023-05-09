@@ -122,3 +122,4 @@ L["guild_bank_last_updated"] = "Banco de hermandad última actualización";
 L["open_options"] = "|cFFFFFFCCClick izquierdo|r para abrir la ventana de opciones";
 L["top_contributors"] = "Top %d Contribuyentes";
 L["text_display"] = "Visualización de texto";
+L["recent_value"] = "Valor de mercado reciente";

@@ -122,3 +122,4 @@ L["guild_bank_last_updated"] = "Gildenbank zuletzt aktualisiert";
 L["open_options"] = "|cFFFFFFCCLinksklick|r, um das Optionsfenster zu öffnen";
 L["top_contributors"] = "Top %d Mitwirkende";
 L["text_display"] = "Textanzeige";
+L["recent_value"] = "Aktueller Marktwert";

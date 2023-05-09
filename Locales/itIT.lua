@@ -125,3 +125,4 @@ L["guild_bank_last_updated"] = "Banca Gilda ultimo aggiornamento";
 L["open_options"] = "|cFFFFFFCCClick sinistro|r per aprire la finestra delle opzioni";
 L["top_contributors"] = "Migliori %d Contributori";
 L["text_display"] = "Visualizzazione testo";
+L["recent_value"] = "Valore di mercato recente";

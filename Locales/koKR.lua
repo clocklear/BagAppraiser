@@ -116,3 +116,4 @@ L["guild_bank_last_updated"] = "길드 은행 마지막 업데이트";
 L["open_options"] = "|cFFFFFFCC왼쪽 클릭|r 옵션 창 열기";
 L["top_contributors"] = "상위 %d 기여자";
 L["text_display"] = "텍스트 디스플레이";
+L["recent_value"] = "최근 시장 가치";

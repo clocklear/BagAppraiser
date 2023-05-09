@@ -121,3 +121,4 @@ L["guild_bank_last_updated"] = "Banco da guilda última atualização";
 L["open_options"] = "|cFFFFFFCCClique esquerdo|r para abrir a janela de opções";
 L["top_contributors"] = "Top %d Contribuintes";
 L["text_display"] = "Exibição de texto";
+L["recent_value"] = "Valor de mercado recente";
