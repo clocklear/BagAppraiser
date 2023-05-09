@@ -1,5 +1,5 @@
 local ADDON_NAME, Addon = ...;
-
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME);
 local LibDataBroker = LibStub("LibDataBroker-1.1");
 
 local bagTotal = "";
@@ -14,32 +14,12 @@ local topContributors = {};
 local private = {};
 
 local settings = {
-	type = "data source",
-	label = ADDON_NAME,
-	text = ADDON_NAME .. " Text Display",
+  type = "data source",
+  label = ADDON_NAME,
+  text = ADDON_NAME .. " " .. L["text_display"],
   icon = "Interface\\Icons\\Inv_Ingot_03",
   OnTooltipShow = function(tooltip)
-    if (tooltip and tooltip.AddLine) then
-      tooltip:AddDoubleLine(ADDON_NAME, ldbLabelText, 1, 1, 1)
-      tooltip:AddLine(" ");
-      tooltip:AddDoubleLine("Bags:", bagTotal, 1, 1, 1)
-      private.addTopContributorSection(tooltip, "Bag")
-      tooltip:AddDoubleLine("Bank:", bankTotal, 1, 1, 1)
-      private.addTopContributorSection(tooltip, "Bank")
-      if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
-        tooltip:AddDoubleLine("Guild Bank:", gbankTotal, 1, 1, 1)
-        private.addTopContributorSection(tooltip, "GuildBank")
-      end
-      tooltip:AddDoubleLine("Total:", grandTotal, 1, 1, 1)
-      tooltip:AddLine(" ");
-      tooltip:AddDoubleLine("Based on:", Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")])
-      tooltip:AddDoubleLine("Bank last updated:", bankLastUpdated)
-      if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
-        tooltip:AddDoubleLine("Guild Bank last updated:", gbankLastUpdated)
-      end
-      tooltip:AddLine(" ");
-      tooltip:AddLine("|cFFFFFFCCLeft-Click|r to open the options window");
-    end
+    Addon.DisplayToolTip(tooltip)
   end,
   OnClick = function(self, button, down)
     if button == "LeftButton" then
@@ -49,19 +29,44 @@ local settings = {
   end,
 };
 
+function Addon.DisplayToolTip(tooltip)
+  if (tooltip and tooltip.AddLine) then
+    tooltip:AddDoubleLine(ADDON_NAME, ldbLabelText, 1, 1, 1)
+    tooltip:AddLine(" ");
+    tooltip:AddDoubleLine(L["bags"] .. ":", bagTotal, 1, 1, 1)
+    private.addTopContributorSection(tooltip, L["bag"])
+    tooltip:AddDoubleLine(L["bank"] .. ":", bankTotal, 1, 1, 1)
+    private.addTopContributorSection(tooltip, L["bank"])
+    if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
+      tooltip:AddDoubleLine(L["guild_bank"] .. ":", gbankTotal, 1, 1, 1)
+      private.addTopContributorSection(tooltip, "GuildBank")
+    end
+    tooltip:AddDoubleLine(L["total"] .. ":", grandTotal, 1, 1, 1)
+    tooltip:AddLine(" ");
+    tooltip:AddDoubleLine(L["based_on"] .. ":", Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")])
+    tooltip:AddDoubleLine(L["bank_last_updated"] .. ":", bankLastUpdated)
+    if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
+      tooltip:AddDoubleLine(L["guild_bank_last_updated"] .. ":", gbankLastUpdated)
+    end
+    tooltip:AddLine(" ");
+    tooltip:AddLine(L["open_options"]);
+  end
+end
+
 function private.addTopContributorSection(tooltip, source)
   if Addon.GetFromDb("topContributors", "enabled") and topContributors and topContributors[source] and Addon:tableSize(topContributors[source]) > 0 then
     local precision = Addon.GetFromDb("moneyPrecision", "tooltip")
-    tooltip:AddLine(format("Top %d Contributors:", Addon.GetFromDb("topContributors", "limit")))
+    tooltip:AddLine(format(L["top_contributors"], Addon.GetFromDb("topContributors", "limit")))
     for k, v in ipairs(topContributors[source]) do
-      tooltip:AddDoubleLine(format("%s x%d", v.itemLink, v.count), GetMoneyString(Addon:round(v.totalValue, precision), true))
+      tooltip:AddDoubleLine(format("%s x%d", v.itemLink, v.count),
+        GetMoneyString(Addon:round(v.totalValue, precision), true))
     end
     tooltip:AddLine(" ");
   end
 end
 
 function Addon:InitializeDataBroker()
-	Addon.BrokerModule = LibDataBroker:NewDataObject(ADDON_NAME, settings);
+  Addon.BrokerModule = LibDataBroker:NewDataObject(ADDON_NAME, settings);
   Addon.icon = LibStub("LibDBIcon-1.0");
   minimapIconSettings = Addon.GetFromDb("minimapIcon");
   Addon.icon:Register(Addon.CONST.METADATA.NAME, Addon.BrokerModule, minimapIconSettings)
@@ -73,9 +78,9 @@ function Addon:InitializeDataBroker()
 end
 
 function Addon:UpdateDataBrokerText(text)
-	if (Addon.BrokerModule ~= nil) then
-		Addon.BrokerModule.text = text;
-	end
+  if (Addon.BrokerModule ~= nil) then
+    Addon.BrokerModule.text = text;
+  end
   ldbLabelText = text;
 end
 
@@ -101,11 +106,11 @@ end
 
 function Addon:UpdateGBankTotalText(text)
   gbankTotal = text;
-end 
+end
 
 function Addon:SetTopContributors(tbl)
   topContributors = tbl;
-end 
+end
 
 function Addon:tableSize(tbl)
   local size = 0;

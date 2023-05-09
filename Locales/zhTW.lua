@@ -101,3 +101,14 @@ L["feature_localization"] =
 "新功能 -- BagAppraiser 現在支援本地化功能！擁有更多原生語言支援。"
 L["feature_pricing_sources"] =
 "新功能 -- 除了 TSM，BagAppraiser 現在還支援拍賣行資料庫、Auctionator 和 Oribos Exchange 作為替代價格來源。"
+L["bags"] = "背包";
+L["bag"] = "背包";
+L["bank"] = "銀行";
+L["guild_bank"] = "公會銀行";
+L["total"] = "總計";
+L["based_on"] = "基於";
+L["bank_last_updated"] = "銀行最後更新";
+L["guild_bank_last_updated"] = "公會銀行最後更新";
+L["open_options"] = "|cFFFFFFCC左鍵點擊|r打開選項窗口";
+L["top_contributors"] = "前%d名貢獻者";
+L["text_display"] = "文字顯示";

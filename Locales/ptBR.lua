@@ -110,3 +110,14 @@ L["feature_localization"] =
 "NOVO -- BagAppraiser agora possui suporte à localização! Uma ampla gama de idiomas nativos é agora acomodada."
 L["feature_pricing_sources"] =
 "NOVO -- Além do TSM, BagAppraiser agora suporta Auction House DataBase, Auctionator e Oribos Exchange como fontes alternativas de preços."
+L["bags"] = "Bolsas";
+L["bag"] = "Bolsa";
+L["bank"] = "Banco";
+L["guild_bank"] = "Banco da guilda";
+L["total"] = "Total";
+L["based_on"] = "Baseado em";
+L["bank_last_updated"] = "Banco última atualização";
+L["guild_bank_last_updated"] = "Banco da guilda última atualização";
+L["open_options"] = "|cFFFFFFCCClique esquerdo|r para abrir a janela de opções";
+L["top_contributors"] = "Top %d Contribuintes";
+L["text_display"] = "Exibição de texto";
