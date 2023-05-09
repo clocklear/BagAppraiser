@@ -1,12 +1,19 @@
 # BagAppraiser
 
-A libdatabroker plugin that provides valuation of bag contents using various pricing sources.
+A World of Warcraft addon that offers comprehensive valuation of your bag contents by accessing a diverse range of pricing sources.
 
 ![BagAppraiser](https://i.imgur.com/Zagxpho.png)
 
-BagAppraiser is a simple addon that taps into TradeSkillMaster or TheUndermineJournal pricing data to provide a total value of the items you have in your bags and bank.  One (or both) of the addons must be installed for it to function properly.  Open its configuration pane with '/ba' to adjust the pricing methodology used.  The addon is written as a libdatabroker plugin, so it can also plug into other host addons as a data source (like TitanPanel, Bagnon, or ChocolateBar).
+BagAppraiser is a simple addon that taps into pricing data from different addons to provide a total value of the items you have in your bags and bank.  At least one of the dependent addons must be installed for it to function properly.  Open its configuration pane with '/ba' to adjust the pricing methodology used.  The addon is written as a libdatabroker plugin, so it can also plug into other host addons as a data source (like TitanPanel, Bagnon, or ChocolateBar).  It is also displayed within the AddonCompartmentFrame added in the retail version of the game.
 
 To calculate your totals, simply open your bags.  Bank totals will display as zero until you visit your bank.
+
+## Supported price sources
+
+- TradeSkillMaster
+- Oribos Exchange
+- Auctionator
+- Auction House DataBase
 
 ## Features
 
@@ -14,6 +21,7 @@ To calculate your totals, simply open your bags.  Bank totals will display as z
 * Support for Guild banks (must be enabled)
 * Top contributors breakdowns for each container source -- see the top valued items contributing to the estimated total
 * ElvUI support as a DataText
+* Localizations for `enUS`, `itIT`, `deDE`, `ruRU`, `koKR`, `frFR`, `esES`, `esMX`, `zhTW`, `ptBR`, and `zhCN`
 
 ## Configuration
 
