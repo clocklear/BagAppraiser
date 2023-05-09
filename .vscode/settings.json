@@ -76,6 +76,7 @@
     "IsAltKeyDown",
     "CreateFont",
     "Minimap",
-    "sort"
+    "sort",
+    "AddonCompartmentFrame"
   ]
 }

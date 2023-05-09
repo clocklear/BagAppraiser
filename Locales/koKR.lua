@@ -105,3 +105,14 @@ L["feature_localization"] =
 "새로운 기능 -- BagAppraiser 이제 지역화 지원 기능! 다양한 모국어를 지원합니다."
 L["feature_pricing_sources"] =
 "새로운 기능 -- TSM 외에도 BagAppraiser는 이제 Auction House DataBase, Auctionator 및 Oribos Exchange를 대체 가격 소스로 지원합니다."
+L["bags"] = "가방";
+L["bag"] = "가방";
+L["bank"] = "은행";
+L["guild_bank"] = "길드 은행";
+L["total"] = "합계";
+L["based_on"] = "기준";
+L["bank_last_updated"] = "은행 마지막 업데이트";
+L["guild_bank_last_updated"] = "길드 은행 마지막 업데이트";
+L["open_options"] = "|cFFFFFFCC왼쪽 클릭|r 옵션 창 열기";
+L["top_contributors"] = "상위 %d 기여자";
+L["text_display"] = "텍스트 디스플레이";

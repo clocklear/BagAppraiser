@@ -1,6 +1,7 @@
 local ADDON_NAME = ...;
 local Addon = LibStub("AceAddon-3.0"):NewAddon(select(2, ...), ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0");
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME);
+local AceGUI = LibStub("AceGUI-3.0")
 
 local private = {
   atBank = false,
@@ -88,6 +89,29 @@ function Addon:OnInitialize()
   Addon.db.RegisterCallback(Addon, "OnProfileReset", "UpdateData")
   Addon:InitializeDataBroker();
   Addon.Debug.Log("Addon - Complete")
+
+  if isRetail then
+    AddonCompartmentFrame:RegisterAddon({
+      text = ADDON_NAME,
+      icon = [[Interface\Icons\Inv_Ingot_03]],
+      func = function(btn, arg1, arg2, checked, mouseButton)
+        if mouseButton == "LeftButton" then
+          InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+          InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+        end
+      end,
+      funcOnEnter = function()
+        local tooltip = AceGUI.tooltip
+        tooltip:SetOwner(AddonCompartmentFrame, "ANCHOR_BOTTOM")
+        Addon.DisplayToolTip(tooltip)
+        tooltip:Show()
+      end,
+      funcOnLeave = function()
+        AceGUI.tooltip:Hide()
+      end,
+      notCheckable = true,
+    })
+  end
 end
 
 function Addon:OnEnable()
