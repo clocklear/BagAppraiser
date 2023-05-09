@@ -5,7 +5,7 @@
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v10.1.0-5
+## Version: v10.1.0-6
 ## OptionalDependencies: TradeSkillMaster, OribosExchange, Auctionator, AuctionDB
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
