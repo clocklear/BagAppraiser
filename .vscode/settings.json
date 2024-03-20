@@ -77,6 +77,13 @@
     "CreateFont",
     "Minimap",
     "sort",
-    "AddonCompartmentFrame"
+    "AddonCompartmentFrame",
+    "pairs",
+    "ipairs",
+    "table",
+    "select",
+    "tonumber",
+    "math",
+    "string"
   ]
 }

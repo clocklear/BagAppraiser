@@ -34,9 +34,9 @@ function Addon.DisplayToolTip(tooltip)
     tooltip:AddDoubleLine(ADDON_NAME, ldbLabelText, 1, 1, 1)
     tooltip:AddLine(" ");
     tooltip:AddDoubleLine(L["bags"] .. ":", bagTotal, 1, 1, 1)
-    private.addTopContributorSection(tooltip, L["bag"])
+    private.addTopContributorSection(tooltip, "Bag")
     tooltip:AddDoubleLine(L["bank"] .. ":", bankTotal, 1, 1, 1)
-    private.addTopContributorSection(tooltip, L["bank"])
+    private.addTopContributorSection(tooltip, "Bank")
     if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
       tooltip:AddDoubleLine(L["guild_bank"] .. ":", gbankTotal, 1, 1, 1)
       private.addTopContributorSection(tooltip, "GuildBank")
@@ -54,7 +54,14 @@ function Addon.DisplayToolTip(tooltip)
 end
 
 function private.addTopContributorSection(tooltip, source)
+  -- Addon.Debug.Log("attempting to add top contributor section for " .. source .. " to tooltip")
+  -- bSettingEnabled = Addon.GetFromDb("topContributors", "enabled")
+  -- Addon.Debug.Log("topContributors setting is " .. tostring(bSettingEnabled))
+  -- Addon.Debug.Log("topContributors table is " .. tostring(topContributors))
+  -- Addon.Debug.Log("topContributors table size is " .. tostring(Addon:tableSize(topContributors)))
+  -- Addon.Debug.Log("topContributors table source size is " .. tostring(Addon:tableSize(topContributors[source])))
   if Addon.GetFromDb("topContributors", "enabled") and topContributors and topContributors[source] and Addon:tableSize(topContributors[source]) > 0 then
+    -- Addon.Debug.Log("topContributors section is enabled and has data")
     local precision = Addon.GetFromDb("moneyPrecision", "tooltip")
     tooltip:AddLine(format(L["top_contributors"], Addon.GetFromDb("topContributors", "limit")))
     for k, v in ipairs(topContributors[source]) do
@@ -63,6 +70,7 @@ function private.addTopContributorSection(tooltip, source)
     end
     tooltip:AddLine(" ");
   end
+  -- Addon.Debug.Log("end top contributor section for " .. source)
 end
 
 function Addon:InitializeDataBroker()

@@ -179,13 +179,13 @@ function Addon.HandleWhatsNew()
   -- Advertised localizations?
   if not Addon.GetFromDb("newFeatures", "localization") then
     Addon:Print(L["feature_localization"]);
-    Addon.db.profile.localization = true;
+    Addon.db.profile.newFeatures.localization = true;
   end
 
   -- Advertised additional price sources?
   if not Addon.GetFromDb("newFeatures", "expandedPricingSources") then
     Addon:Print(L["feature_pricing_sources"]);
-    Addon.db.profile.expandedPricingSources = true;
+    Addon.db.profile.newFeatures.expandedPricingSources = true;
   end
 end
 
