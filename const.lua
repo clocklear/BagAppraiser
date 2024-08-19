@@ -3,7 +3,7 @@ local ADDON_NAME = ...;
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME);
 
 -- wow api
-local GetAddOnMetadata, UIParent = GetAddOnMetadata, UIParent
+local GetAddOnMetadata = C_AddOns.GetAddOnMetadata
 
 local CONST = {}
 Addon.CONST = CONST
