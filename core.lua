@@ -6,6 +6,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local private = {
   atBank = false,
   atGuildBank = false,
+  atAccountBank = false,
   ignoreSet = {},
   allowedSet = {},
   useAllowSet = false,
@@ -29,6 +30,9 @@ local FIRST_BANK_SLOT =
     1                           -- should be 6 in DF
 local LAST_BANK_SLOT = totalBagSlots + NUM_BANKBAGSLOTS
 local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
+local FIRST_WARBAND_BANK_SLOT = Enum.BagIndex.AccountBankTab_1 or 13
+local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + Constants.InventoryConstants.NumAccountBankSlots - 1
+local WARBAND_BANK_TAB_SLOTS = 98
 
 local getContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
 local getContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
@@ -60,6 +64,9 @@ local AddonDB_Defaults = {
       limit = 5,
     },
     guildBank = {
+      enabled = false,
+    },
+    accountBank = {
       enabled = false,
     },
     qualityFilter = {
@@ -96,8 +103,8 @@ function Addon:OnInitialize()
       icon = [[Interface\Icons\Inv_Ingot_03]],
       func = function(btn, arg1, arg2, checked, mouseButton)
         if mouseButton == "LeftButton" then
-          InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
-          InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+          Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
+          Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
         end
       end,
       funcOnEnter = function()
@@ -134,6 +141,9 @@ function Addon:OnEnable()
       if arg == 10 then -- gbank
         private.OnGuildBankFrameOpened();
       end
+      -- if arg == 68 then -- warband bank
+      --   private.OnAccountBankFrameOpened();
+      -- end
     end)
     Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(event, arg)
       if arg == 8 then -- bank
@@ -142,6 +152,9 @@ function Addon:OnEnable()
       if arg == 10 then -- gbank
         private.OnGuildBankFrameClosed();
       end
+      -- if arg == 68 then -- warband bank
+      --   private.OnAccountBankFrameClosed();
+      -- end
     end)
   end
 
@@ -194,7 +207,7 @@ function Addon:UpdateData()
   local topContributorsLimit = Addon.GetFromDb("topContributors", "limit")
   Addon.Debug.Log("UpdateData() started")
 
-  -- Do this one for performance reasons
+  -- Do this once for performance reasons
   private.ignoreSet = private.getIgnoredItemSet();
   private.allowedSet = private.getAllowedItemSet();
   private.useAllowSet = Addon.GetFromDb("itemAllow", "enabled");
@@ -245,9 +258,29 @@ function Addon:UpdateData()
     end
   end
 
+  -- If at the account bank and option is enabled, iterate those bags
+  if private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") then
+    local accountBankTopContributors = {};
+    for slot = FIRST_WARBAND_BANK_SLOT, LAST_WARBAND_BANK_SLOT do
+      local bagValue = private.ValuateBag(slot)
+      private.SaveValue("Bag", slot, bagValue.value)
+      private.SaveAccountBankLastUpdated(time())
+      if buildTopContributors then
+        private.insertContributors(accountBankTopContributors, bagValue.items)
+      end
+    end
+    if buildTopContributors then
+      private.persistTopContributors("AccountBank", accountBankTopContributors, topContributorsLimit)
+    end
+  end
+
   local bankLastUpdated = private.GetBankLastUpdated();
   if bankLastUpdated then
     Addon:UpdateBankLastUpdatedText(date("%x %X", bankLastUpdated))
+  end
+  local accountBankLastUpdated = private.GetAccountBankLastUpdated();
+  if accountBankLastUpdated then
+    Addon:UpdateAccountBankLastUpdatedText(date("%x %X", accountBankLastUpdated))
   end
   local gbankLastUpdated = private.GetGBankLastUpdated();
   if gbankLastUpdated then
@@ -328,11 +361,13 @@ end
 
 function private.OnBankFrameOpened()
   private.atBank = true;
+  private.atAccountBank = true;
   Addon:UpdateData();
 end
 
 function private.OnBankFrameClosed()
   private.atBank = false;
+  private.atAccountBank = false;
 end
 
 function private.OnGuildBankFrameOpened()
@@ -344,7 +379,16 @@ function private.OnGuildBankFrameClosed()
   private.atGuildBank = false;
 end
 
+-- function private.OnAccountBankFrameOpened()
+--   private.atAccountBank = true;
+-- end
+
+-- function private.OnAccountBankFrameClosed()
+--   private.atAccountBank = false;
+-- end
+
 function private.ValuateBag(bag)
+  Addon.Debug.Log(format("ValuateBag(): %d", bag))
   local result = {
     value = 0,
     items = {},
@@ -465,6 +509,11 @@ function private.GetGBankLastUpdated()
   return charTable["GBankLastUpdated"];
 end
 
+function private.GetAccountBankLastUpdated()
+  local charTable = private.GetCharacterTable();
+  return charTable["AccountBankLastUpdated"];
+end
+
 function private.SaveBankLastUpdated(time)
   local charTable = private.GetCharacterTable();
   charTable["BankLastUpdated"] = time;
@@ -473,6 +522,11 @@ end
 function private.SaveGBankLastUpdated(time)
   local charTable = private.GetCharacterTable();
   charTable["GBankLastUpdated"] = time;
+end
+
+function private.SaveAccountBankLastUpdated(time)
+  local charTable = private.GetCharacterTable();
+  charTable["AccountBankLastUpdated"] = time;
 end
 
 function private.GetTopContributors(type)
@@ -504,6 +558,14 @@ function private.GetBankBagIDs()
   -- Add the reagent bag
   if REAGENTBANK_CONTAINER and IsReagentBankUnlocked() then
     arr[REAGENTBANK_CONTAINER] = 0;
+  end
+  return arr;
+end
+
+function private.GetAccountBankBagIDs()
+  local arr = {};
+  for i = FIRST_WARBAND_BANK_SLOT, LAST_WARBAND_BANK_SLOT do
+    arr[i] = 0;
   end
   return arr;
 end
@@ -573,11 +635,19 @@ function private.RecalculateTotals()
     Addon:UpdateGBankTotalText(gbankTotalString);
   end
 
+  -- Iterate Account Bank bags
+  local accountBankTotal = 0;
+  if Addon.GetFromDb("accountBank", "enabled") then
+    accountBankTotal = private.GetSavedTotalForBags(private.GetAccountBankBagIDs());
+    local accountBankTotalString = GetMoneyString(Addon:round(accountBankTotal, tooltipMoneyPrecision), true);
+    Addon:UpdateAccountBankTotalText(accountBankTotalString);
+  end
+
   -- convert to text and update databroker
-  local grandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal, tooltipMoneyPrecision), true);
+  local grandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal + accountBankTotal, tooltipMoneyPrecision), true);
   Addon:UpdateGrandTotalText(grandTotalString);
   if ldbLabelSetting == "combinedtotal" then
-    local ldbGrandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal, ldbMoneyPrecision), true);
+    local ldbGrandTotalString = GetMoneyString(Addon:round(bagTotal + bankTotal + gbankTotal + accountBankTotal, ldbMoneyPrecision), true);
     Addon:UpdateDataBrokerText(ldbGrandTotalString);
   end
 
@@ -586,6 +656,7 @@ function private.RecalculateTotals()
     local topContributors = {
       Bag = private.GetTopContributors("Bag"),
       Bank = private.GetTopContributors("Bank"),
+      AccountBank = private.GetTopContributors("AccountBank"),
       GuildBank = private.GetTopContributors("GuildBank"),
     }
     Addon:SetTopContributors(topContributors);
@@ -651,8 +722,8 @@ end
 
 function private.chatCmdShowConfig()
   -- happens twice because there is a bug in the blizz implementation and the first call doesn't work. subsequent calls do.
-  InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
-  InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+  Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
+  Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
 end
 
 function private.getIgnoredItemSet()

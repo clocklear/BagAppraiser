@@ -6,8 +6,10 @@ local bagTotal = "";
 local bankTotal = "";
 local grandTotal = "";
 local gbankTotal = "";
+local accountBankTotal = "";
 local bankLastUpdated = "never";
 local gbankLastUpdated = "never";
+local accountBankLastUpdated = "never";
 local ldbLabelText = "";
 local topContributors = {};
 
@@ -23,8 +25,8 @@ local settings = {
   end,
   OnClick = function(self, button, down)
     if button == "LeftButton" then
-      InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
-      InterfaceOptionsFrame_OpenToCategory(Addon.CONST.METADATA.NAME)
+      Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
+      Settings.OpenToCategory(Addon.CONST.METADATA.NAME)
     end
   end,
 };
@@ -37,6 +39,10 @@ function Addon.DisplayToolTip(tooltip)
     private.addTopContributorSection(tooltip, "Bag")
     tooltip:AddDoubleLine(L["bank"] .. ":", bankTotal, 1, 1, 1)
     private.addTopContributorSection(tooltip, "Bank")
+    if Addon.GetFromDb("accountBank", "enabled") then
+      tooltip:AddDoubleLine(L["account_bank"] .. ":", accountBankTotal, 1, 1, 1)
+      private.addTopContributorSection(tooltip, "AccountBank")
+    end
     if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
       tooltip:AddDoubleLine(L["guild_bank"] .. ":", gbankTotal, 1, 1, 1)
       private.addTopContributorSection(tooltip, "GuildBank")
@@ -45,6 +51,9 @@ function Addon.DisplayToolTip(tooltip)
     tooltip:AddLine(" ");
     tooltip:AddDoubleLine(L["based_on"] .. ":", Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")])
     tooltip:AddDoubleLine(L["bank_last_updated"] .. ":", bankLastUpdated)
+    if Addon.GetFromDb("accountBank", "enabled") then
+      tooltip:AddDoubleLine(L["account_bank_last_updated"] .. ":", accountBankLastUpdated)
+    end
     if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
       tooltip:AddDoubleLine(L["guild_bank_last_updated"] .. ":", gbankLastUpdated)
     end
@@ -112,8 +121,16 @@ function Addon:UpdateGBankLastUpdatedText(text)
   gbankLastUpdated = text;
 end
 
+function Addon:UpdateAccountBankLastUpdatedText(text)
+  accountBankLastUpdated = text;
+end
+
 function Addon:UpdateGBankTotalText(text)
   gbankTotal = text;
+end
+
+function Addon:UpdateAccountBankTotalText(text)
+  accountBankTotal = text;
 end
 
 function Addon:SetTopContributors(tbl)

@@ -108,6 +108,25 @@ local generalOptionsGroup = {
       name = L["enable_guild_bank_footer"]
     },
     opt12 = { type = "description", order = 51, fontSize = "small", name = " " },
+    opt15 = {
+      type = "toggle",
+      order = 55,
+      name = L["enable_account_bank"],
+      desc = L["enable_account_bank_desc"],
+      width = "full",
+      get = function(info) return Addon.GetFromDb("accountBank", "enabled") end,
+      set = function(info, value)
+        Addon.db.profile.accountBank.enabled = value;
+        Addon:UpdateData();
+      end
+    },
+    opt16 = {
+      type = "description",
+      order = 56,
+      fontSize = "small",
+      name = L["enable_account_bank_footer"]
+    },
+    opt17 = { type = "description", order = 57, fontSize = "small", name = " " },
     opt13 = {
       type = "select",
       order = 60,
@@ -474,6 +493,7 @@ function Config:OnEnable()
   AceConfigRegistry:RegisterOptionsTable(Addon.CONST.METADATA.NAME, private.getOptionsTable)
   local baConfig = AceConfigDialog:AddToBlizOptions(Addon.CONST.METADATA.NAME)
   baConfig.default = private.resetDB
+  Addon.Debug.Log(format("%d account bank slots", Constants.InventoryConstants.NumAccountBankSlots))
   Addon.Debug.Log("Config - Complete")
 end
 
