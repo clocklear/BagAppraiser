@@ -122,3 +122,10 @@ L["open_options"] = "|cFFFFFFCCClique esquerdo|r para abrir a janela de opções
 L["top_contributors"] = "Top %d Contribuintes";
 L["text_display"] = "Exibição de texto";
 L["recent_value"] = "Valor de mercado recente";
+L["account_bank"] = "Banco da Guilda de Guerra";
+L["account_bank_last_updated"] = "Banco da Guilda de Guerra atualizado pela última vez";
+L["enable_account_bank"] = "Habilitar banco da Guilda de Guerra";
+L["enable_account_bank_desc"] = "Resumir o conteúdo do banco da Guilda de Guerra.";
+L["enable_account_bank_footer"] = "Habilitar o banco da Guilda de Guerra incluirá seu valor em qualquer lugar onde o 'Total Combinado' for exibido. Embora o valor do banco da Guilda de Guerra seja compartilhado entre os personagens, o cálculo não é.";
+L["feature_tww_support"] = "NOVO -- BagAppraiser agora suporta The War Within e tem suporte inicial para o Banco da Guilda de Guerra! Por favor, reporte quaisquer problemas que encontrar.";
+

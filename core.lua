@@ -200,6 +200,12 @@ function Addon.HandleWhatsNew()
     Addon:Print(L["feature_pricing_sources"]);
     Addon.db.profile.newFeatures.expandedPricingSources = true;
   end
+
+  -- Advertised TWW and warband bank?
+  if not Addon.GetFromDb("newFeatures", "twwSupport") then
+    Addon:Print(L["feature_tww_support"]);
+    Addon.db.profile.newFeatures.twwSupport = true;
+  end
 end
 
 function Addon:UpdateData()
