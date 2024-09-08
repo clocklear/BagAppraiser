@@ -209,6 +209,23 @@ local filterOptionsGroup = {
   order = 15,
   name = "Filters",
   args = {
+    optBagFilter = {
+      type = "select",
+      order = 55,
+      name = L["bag_selection"],
+      desc = L["bag_selection_desc"],
+      width = "double",
+      values = function() return Addon.CONST.SELECTED_BAGS end,
+      get = function(info) return Addon.GetFromDb("bagFilter", "selectedBags") end,
+      set = function(info, value)
+        local oldValue = Addon.GetFromDb("bagFilter", "selectedBags");
+        Addon.db.profile.bagFilter.selectedBags = value;
+        if oldValue ~= value then
+          Addon:Print(format(L["bag_selection_changed"], Addon.CONST.SELECTED_BAGS[value]));
+          Addon:UpdateData();
+        end
+      end,
+    },
     enableQualityFilter = {
       type = "toggle",
       order = 60,

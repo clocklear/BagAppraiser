@@ -39,7 +39,7 @@ function Addon.DisplayToolTip(tooltip)
     private.addTopContributorSection(tooltip, "Bag")
     tooltip:AddDoubleLine(L["bank"] .. ":", bankTotal, 1, 1, 1)
     private.addTopContributorSection(tooltip, "Bank")
-    if Addon.GetFromDb("accountBank", "enabled") then
+    if Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
       tooltip:AddDoubleLine(L["account_bank"] .. ":", accountBankTotal, 1, 1, 1)
       private.addTopContributorSection(tooltip, "AccountBank")
     end
@@ -51,7 +51,7 @@ function Addon.DisplayToolTip(tooltip)
     tooltip:AddLine(" ");
     tooltip:AddDoubleLine(L["based_on"] .. ":", Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")])
     tooltip:AddDoubleLine(L["bank_last_updated"] .. ":", bankLastUpdated)
-    if Addon.GetFromDb("accountBank", "enabled") then
+    if Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
       tooltip:AddDoubleLine(L["account_bank_last_updated"] .. ":", accountBankLastUpdated)
     end
     if Addon.GetFromDb("guildBank", "enabled") and IsInGuild() then
