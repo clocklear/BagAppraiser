@@ -59,3 +59,8 @@ CONST.MONEY_PRECISION = {
   [2] = L["precision_silver"] .. " (" .. GetMoneyString(12345700, true) .. ")",
   [4] = L["precision_gold"] .. " (" .. GetMoneyString(12350000, true) .. ")",
 }
+
+CONST.SELECTED_BAGS = {
+  ["all"] = L["bags_all"],
+  ["reagent"] = L["bags_reagent"],
+}

@@ -12,7 +12,6 @@ local private = {
   useAllowSet = false,
 }
 
-local wowVersionString, wowBuild, _, wowTOC = GetBuildInfo()
 local isRetail = WOW_PROJECT_ID == (WOW_PROJECT_MAINLINE or 1)
 local isClassic = WOW_PROJECT_ID == (WOW_PROJECT_CLASSIC or 2)
 local isBCC = WOW_PROJECT_ID == (WOW_PROJECT_BURNING_CRUSADE_CLASSIC or 5)
@@ -20,19 +19,14 @@ local isWrath = WOW_PROJECT_ID == (WOW_PROJECT_WRATH_CLASSIC or 11)
 
 local currentCharacter = UnitName("player")
 local currentRealm = GetRealmName()
-local currentAccount = THIS_ACCOUNT
 
-local totalBagSlots = (NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS) -- NUM_TOTAL_EQUIPPED_BAG_SLOTS doesn't exist in classic
-local FIRST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER
-local LAST_PERSONAL_BAG_SLOT = BACKPACK_CONTAINER + NUM_BAG_SLOTS + 1 -- reagent container
-local FIRST_BANK_SLOT =
-    totalBagSlots +
-    1                           -- should be 6 in DF
-local LAST_BANK_SLOT = totalBagSlots + NUM_BANKBAGSLOTS
+local FIRST_PERSONAL_BAG_SLOT = Enum.BagIndex.Backpack or BACKPACK_CONTAINER
+local LAST_PERSONAL_BAG_SLOT = Enum.BagIndex.Bag_4 or NUM_BAG_SLOTS
+local FIRST_BANK_SLOT = BANK_CONTAINER
+local LAST_BANK_SLOT = BANK_CONTAINER + NUM_BANKBAGSLOTS
 local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
 local FIRST_WARBAND_BANK_SLOT = Enum.BagIndex.AccountBankTab_1 or 13
-local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + Constants.InventoryConstants.NumAccountBankSlots - 1
-local WARBAND_BANK_TAB_SLOTS = 98
+local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + (Constants.InventoryConstants.NumAccountBankSlots or 0) - 1
 
 local getContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
 local getContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
@@ -84,7 +78,10 @@ local AddonDB_Defaults = {
     moneyPrecision = {
       ldb = 0,
       tooltip = 0,
-    }
+    },
+    bagFilter = {
+      selectedBags = "all",
+    },
   },
 }
 
@@ -141,9 +138,6 @@ function Addon:OnEnable()
       if arg == 10 then -- gbank
         private.OnGuildBankFrameOpened();
       end
-      -- if arg == 68 then -- warband bank
-      --   private.OnAccountBankFrameOpened();
-      -- end
     end)
     Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(event, arg)
       if arg == 8 then -- bank
@@ -152,9 +146,6 @@ function Addon:OnEnable()
       if arg == 10 then -- gbank
         private.OnGuildBankFrameClosed();
       end
-      -- if arg == 68 then -- warband bank
-      --   private.OnAccountBankFrameClosed();
-      -- end
     end)
   end
 
@@ -205,6 +196,12 @@ function Addon.HandleWhatsNew()
   if not Addon.GetFromDb("newFeatures", "twwSupport") then
     Addon:Print(L["feature_tww_support"]);
     Addon.db.profile.newFeatures.twwSupport = true;
+  end
+
+  -- Advertised reagent bag only?
+  if not Addon.GetFromDb("newFeatures", "reagentBagOnly") then
+    Addon:Print(L["feature_reagent_bag_only"]);
+    Addon.db.profile.newFeatures.reagentBagOnly = true;
   end
 end
 
@@ -265,7 +262,8 @@ function Addon:UpdateData()
   end
 
   -- If at the account bank and option is enabled, iterate those bags
-  if private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") then
+  -- Note this is disabled for classic and if the bag filter is not set to 'all'
+  if isRetail and private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
     local accountBankTopContributors = {};
     for slot = FIRST_WARBAND_BANK_SLOT, LAST_WARBAND_BANK_SLOT do
       local bagValue = private.ValuateBag(slot)
@@ -284,9 +282,11 @@ function Addon:UpdateData()
   if bankLastUpdated then
     Addon:UpdateBankLastUpdatedText(date("%x %X", bankLastUpdated))
   end
-  local accountBankLastUpdated = private.GetAccountBankLastUpdated();
-  if accountBankLastUpdated then
-    Addon:UpdateAccountBankLastUpdatedText(date("%x %X", accountBankLastUpdated))
+  if isRetail then
+    local accountBankLastUpdated = private.GetAccountBankLastUpdated();
+    if accountBankLastUpdated then
+      Addon:UpdateAccountBankLastUpdatedText(date("%x %X", accountBankLastUpdated))
+    end
   end
   local gbankLastUpdated = private.GetGBankLastUpdated();
   if gbankLastUpdated then
@@ -547,22 +547,29 @@ end
 
 function private.GetPersonalBagIDs()
   local arr = {};
-  for i = FIRST_PERSONAL_BAG_SLOT, LAST_PERSONAL_BAG_SLOT do
-    arr[i] = 0;
+  -- Add the bags we want to track based on the selectedBags setting
+  local selectedBags = Addon.GetFromDb("bagFilter", "selectedBags");
+  if selectedBags == "all" then
+    for i = FIRST_PERSONAL_BAG_SLOT, LAST_PERSONAL_BAG_SLOT do
+      arr[i] = 0;
+    end
+  end
+  if selectedBags == "all" or selectedBags == "reagent" then
+    arr[LAST_PERSONAL_BAG_SLOT + 1] = 0; -- reagent bag is the next slot
   end
   return arr;
 end
 
 function private.GetBankBagIDs()
   local arr = {};
-  -- Add the primary bag
-  arr[BANK_CONTAINER] = 0;
-  -- Add any existing bags
-  for i = FIRST_BANK_SLOT, LAST_BANK_SLOT do
-    arr[i] = 0;
+  -- Add the bags we want to track based on the selectedBags setting
+  local selectedBags = Addon.GetFromDb("bagFilter", "selectedBags");
+  if selectedBags == "all" then
+    for i = FIRST_BANK_SLOT, LAST_BANK_SLOT do
+      arr[i] = 0;
+    end
   end
-  -- Add the reagent bag
-  if REAGENTBANK_CONTAINER and IsReagentBankUnlocked() then
+  if selectedBags == "all" or selectedBags == "reagent" then
     arr[REAGENTBANK_CONTAINER] = 0;
   end
   return arr;
@@ -643,7 +650,7 @@ function private.RecalculateTotals()
 
   -- Iterate Account Bank bags
   local accountBankTotal = 0;
-  if Addon.GetFromDb("accountBank", "enabled") then
+  if isRetail and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
     accountBankTotal = private.GetSavedTotalForBags(private.GetAccountBankBagIDs());
     local accountBankTotalString = GetMoneyString(Addon:round(accountBankTotal, tooltipMoneyPrecision), true);
     Addon:UpdateAccountBankTotalText(accountBankTotalString);
@@ -662,9 +669,11 @@ function private.RecalculateTotals()
     local topContributors = {
       Bag = private.GetTopContributors("Bag"),
       Bank = private.GetTopContributors("Bank"),
-      AccountBank = private.GetTopContributors("AccountBank"),
       GuildBank = private.GetTopContributors("GuildBank"),
     }
+    if isRetail then
+      topContributors.AccountBank = private.GetTopContributors("AccountBank");
+    end
     Addon:SetTopContributors(topContributors);
   else
     Addon:SetTopContributors({});

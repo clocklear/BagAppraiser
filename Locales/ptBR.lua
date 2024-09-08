@@ -128,4 +128,9 @@ L["enable_account_bank"] = "Habilitar banco da Guilda de Guerra";
 L["enable_account_bank_desc"] = "Resumir o conteúdo do banco da Guilda de Guerra.";
 L["enable_account_bank_footer"] = "Habilitar o banco da Guilda de Guerra incluirá seu valor em qualquer lugar onde o 'Total Combinado' for exibido. Embora o valor do banco da Guilda de Guerra seja compartilhado entre os personagens, o cálculo não é.";
 L["feature_tww_support"] = "NOVO -- BagAppraiser agora suporta The War Within e tem suporte inicial para o Banco da Guilda de Guerra! Por favor, reporte quaisquer problemas que encontrar.";
-
+L["feature_reagent_bag_only"] = "NOVO - O BagAppraiser agora suporta um modo apenas para bolsas de reagentes! Verifique a janela de configuração para mais detalhes."
+L["bag_selection"] = "Seleção de Bolsas"
+L["bags_all"] = "Todas as Bolsas"
+L["bags_reagent"] = "Apenas Bolsas de Reagentes"
+L["bag_selection_desc"] = "Selecione quais bolsas incluir na avaliação. Se configurado para qualquer coisa diferente de 'Todas as Bolsas', o banco da guilda será excluído, pois a Blizzard trata esses slots de maneira ligeiramente diferente."
+L["bag_selection_changed"] = "Seleção de bolsas alterada para: %s"
