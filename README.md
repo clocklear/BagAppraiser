@@ -39,4 +39,10 @@ As of v9.0.2-6, BagAppraiser has ElvUI support.  You can expose the addon inside
 
 ## Issues
 
+### I can't open the addon options pane and my bags at the same time!
+
+There is a limitation in the default Blizzard UI in which bags and the WoW menu cannot be opened simultaneously.  This is typically only a problem if you need to modify the item allowlists or blocklists.  As a workaround, consider (temporarily) installing a bag-replacement addon (such as BetterBags or Bagnon), or any other addon that allows you to open your bags while the menu is open.  Adding a bespoke UI frame to manage these lists outside of the default options pane is more than I want to take on at this point in time.
+
+### Other Issues
+
 If you encounter any problems, please [open an issue on Github](https://github.com/clocklear/BagAppraiser/issues).  I'll get to it ASAP.
