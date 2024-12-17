@@ -1,11 +1,11 @@
-## Interface-Retail: 110005
+## Interface-Retail: 110007
 ## Interface-Classic: 11500
 ## Interface-BCC: 20504
 ## Interface-Wrath: 30403
 ## Title: BagAppraiser
 ## Notes: Provides simple valuation of bag contents
 ## Author: clocklear
-## Version: v11.0.5-1
+## Version: v11.0.7-1
 ## OptionalDependencies: TradeSkillMaster, OribosExchange, Auctionator, AuctionDB
 ## SavedVariables: BagAppraiserDB
 ## X-Embeds: Ace3, LibDataBroker-1.1, CallbackHandler-1.0
