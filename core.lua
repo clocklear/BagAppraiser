@@ -18,12 +18,21 @@ local isBCC = WOW_PROJECT_ID == (WOW_PROJECT_BURNING_CRUSADE_CLASSIC or 5)
 local isWrath = WOW_PROJECT_ID == (WOW_PROJECT_WRATH_CLASSIC or 11)
 
 local currentCharacter = UnitName("player")
+
+-- Compatibility aliases for Dragonflight/War Within API changes
+local BACKPACK_CONTAINER = _G.BACKPACK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.Backpack) or 0
+local BANK_CONTAINER = _G.BANK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.Bank) or -1
+local REAGENTBANK_CONTAINER = _G.REAGENTBANK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.ReagentBank) or -3
+
+-- Blizzard changed some globals; compute bank bag slot range explicitly
+local NUM_EQUIPPED_BAG_SLOTS = _G.NUM_BAG_SLOTS or (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBagSlots) or 4
+local NUM_EQUIPPED_BANK_BAG_SLOTS = _G.NUM_BANKBAGSLOTS or (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBankBagSlots) or 7
 local currentRealm = GetRealmName()
 
-local FIRST_PERSONAL_BAG_SLOT = Enum.BagIndex.Backpack or BACKPACK_CONTAINER
-local LAST_PERSONAL_BAG_SLOT = Enum.BagIndex.Bag_4 or NUM_BAG_SLOTS
-local FIRST_BANK_SLOT = BANK_CONTAINER
-local LAST_BANK_SLOT = BANK_CONTAINER + NUM_BANKBAGSLOTS
+local FIRST_PERSONAL_BAG_SLOT = (Enum.BagIndex and Enum.BagIndex.Backpack) or BACKPACK_CONTAINER
+local LAST_PERSONAL_BAG_SLOT = (Enum.BagIndex and Enum.BagIndex.Bag_4) or NUM_EQUIPPED_BAG_SLOTS
+local FIRST_BANK_SLOT = NUM_EQUIPPED_BAG_SLOTS + 1
+local LAST_BANK_SLOT = NUM_EQUIPPED_BAG_SLOTS + NUM_EQUIPPED_BANK_BAG_SLOTS
 local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
 local FIRST_WARBAND_BANK_SLOT = Enum.BagIndex.AccountBankTab_1 or 13
 local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + (Constants.InventoryConstants.NumAccountBankSlots or 0) - 1
