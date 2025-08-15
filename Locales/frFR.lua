@@ -93,8 +93,7 @@ L["about_bagappraiser"] =
 L["credits"] = "Crédits";
 L["author"] = "Écrit par clocklear (github.com/clocklear)";
 L["woweconomy_thanks"] = "Merci à /r/woweconomy pour le soutien et les excellentes idées de fonctionnalités.";
-L["other_thanks"] =
-"Un merci spécial à ProfitzTV et Testerle pour leur travail sur LootAppraiser; cet addon s'inspire largement de leur travail. Je suis sur les épaules de géants.";
+L["other_thanks"] = "Un remerciement spécial à ProfitzTV et Testerle pour leur travail sur LootAppraiser ; cet addon s’appuie fortement sur leur travail. Je me tiens sur les épaules de géants.\n\nMerci également à lordtyrion2005 pour avoir fourni une mise à jour pour WoW 11.1.x durant mon absence."
 L["need_help"] =
 "Besoin d'aide ? Vous avez une demande de fonctionnalité ? Ouvrez un problème sur le dépôt de code pour BagAppraiser ou envoyez-moi un MP sur Reddit.";
 L["issue_tracker"] = "Suivi des problèmes:";

@@ -90,10 +90,8 @@ L["about_bagappraiser"] =
 L["credits"] = "Credits";
 L["author"] = "Written by clocklear (github.com/clocklear)";
 L["woweconomy_thanks"] = "Thanks to /r/woweconomy for the support and the great feature ideas.";
-L["other_thanks"] =
-"Special thanks to ProfitzTV and Testerle for their work on LootAppraiser; this addon borrows heavily from their work.  I'm standing on the shoulders of giants.";
-L["need_help"] =
-"Need help?  Have a feature request?  Open an issue on the code repository for BagAppraiser or send me a PM on Reddit.";
+L["other_thanks"] = "Special thanks to ProfitzTV and Testerle for their work on LootAppraiser; this addon borrows heavily from their work.  I'm standing on the shoulders of giants.\n\nThanks to lordtyrion2005 for providing an update for WoW 11.1.x in my absence.";
+L["need_help"] = "Need help?  Have a feature request?  Open an issue on the code repository for BagAppraiser or send me a PM on Reddit.";
 L["issue_tracker"] = "Issue Tracker:";
 L["feedback"] = "Feedback";
 L["tsm"] = "TradeSkillMaster"
