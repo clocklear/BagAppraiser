@@ -33,20 +33,89 @@ local currentCharacter = UnitName("player")
 -- Compatibility aliases for Dragonflight/War Within API changes
 local BACKPACK_CONTAINER = _G.BACKPACK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.Backpack) or 0
 local BANK_CONTAINER = _G.BANK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.Bank) or -1
-local REAGENTBANK_CONTAINER = _G.REAGENTBANK_CONTAINER or (Enum.BagIndex and Enum.BagIndex.ReagentBank) or -3
 
--- Blizzard changed some globals; compute bank bag slot range explicitly
-local NUM_EQUIPPED_BAG_SLOTS = _G.NUM_BAG_SLOTS or (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBagSlots) or 4
-local NUM_EQUIPPED_BANK_BAG_SLOTS = _G.NUM_BANKBAGSLOTS or (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBankBagSlots) or 7
-local currentRealm = GetRealmName()
+local function safePositiveInteger(value, fallback)
+  if type(value) == "number" and value >= 1 and value == math.floor(value) then
+    return value
+  end
+  return fallback
+end
 
-local FIRST_PERSONAL_BAG_SLOT = (Enum.BagIndex and Enum.BagIndex.Backpack) or BACKPACK_CONTAINER
-local LAST_PERSONAL_BAG_SLOT = (Enum.BagIndex and Enum.BagIndex.Bag_4) or NUM_EQUIPPED_BAG_SLOTS
-local FIRST_BANK_SLOT = NUM_EQUIPPED_BAG_SLOTS + 1
-local LAST_BANK_SLOT = NUM_EQUIPPED_BAG_SLOTS + NUM_EQUIPPED_BANK_BAG_SLOTS
+local function safeBagIndex(value, fallback)
+  if type(value) == "number" then
+    return value
+  end
+  return fallback
+end
+
+local function setBagInList(arr, bagID)
+  if type(bagID) == "number" then
+    arr[bagID] = 0
+  end
+end
+
+-- Classic clients can expose invalid NumBagSlots / broken Enum.BagIndex bank values.
+local function getNumEquippedBagSlots()
+  return safePositiveInteger(_G.NUM_BAG_SLOTS,
+    safePositiveInteger(Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBagSlots, 4))
+end
+
+local function getNumEquippedBankBagSlots()
+  return safePositiveInteger(_G.NUM_BANKBAGSLOTS,
+    safePositiveInteger(Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBankBagSlots, 7))
+end
+
+local function getReagentBagID()
+  if not isRetail then
+    return nil
+  end
+  return safeBagIndex(_G.REAGENT_CONTAINER, safeBagIndex(Enum.BagIndex and Enum.BagIndex.ReagentBag, 5))
+end
+
+local function getReagentBankID()
+  if not isRetail then
+    return nil
+  end
+  return safeBagIndex(_G.REAGENTBANK_CONTAINER, safeBagIndex(Enum.BagIndex and Enum.BagIndex.ReagentBank, -3))
+end
+
+local function addRetailBankBagIDs(arr)
+  local numBagSlots = getNumEquippedBagSlots()
+  local numBankBagSlots = getNumEquippedBankBagSlots()
+  setBagInList(arr, BANK_CONTAINER)
+  for i = numBagSlots + 1, numBagSlots + numBankBagSlots do
+    setBagInList(arr, i)
+  end
+end
+
+local function addClassicBankBagIDs(arr)
+  setBagInList(arr, BANK_CONTAINER)
+
+  if Enum.BagIndex then
+    for i = 1, getNumEquippedBankBagSlots() do
+      local bankBagEnum = Enum.BagIndex["BankBag_" .. i]
+      if type(bankBagEnum) == "number" then
+        -- Enum.BagIndex bank bag values are off by one on Classic clients.
+        setBagInList(arr, bankBagEnum - 1)
+      end
+    end
+    return
+  end
+
+  if GetFirstBagBankSlotIndex then
+    local firstBankBagSlot = GetFirstBagBankSlotIndex()
+    if type(firstBankBagSlot) == "number" then
+      for slot = firstBankBagSlot, firstBankBagSlot + getNumEquippedBankBagSlots() - 1 do
+        setBagInList(arr, slot)
+      end
+    end
+  end
+end
+
 local GUILD_BANK_TAB_SLOTS = 98 -- MAX_GUILDBANK_SLOTS_PER_TAB
-local FIRST_WARBAND_BANK_SLOT = Enum.BagIndex.AccountBankTab_1 or 13
-local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + (Constants.InventoryConstants.NumAccountBankSlots or 0) - 1
+local FIRST_WARBAND_BANK_SLOT = Enum.BagIndex and Enum.BagIndex.AccountBankTab_1 or 13
+local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumAccountBankSlots or 0) - 1
+local currentRealm = GetRealmName()
 
 local getContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
 local getContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
@@ -670,38 +739,48 @@ end
 
 function private.GetPersonalBagIDs()
   local arr = {};
-  -- Add the bags we want to track based on the selectedBags setting
   local selectedBags = Addon.GetFromDb("bagFilter", "selectedBags");
+
   if selectedBags == "all" then
-    for i = FIRST_PERSONAL_BAG_SLOT, LAST_PERSONAL_BAG_SLOT do
-      arr[i] = 0;
+    setBagInList(arr, BACKPACK_CONTAINER)
+    for i = 1, getNumEquippedBagSlots() do
+      setBagInList(arr, i)
     end
   end
+
   if selectedBags == "all" or selectedBags == "reagent" then
-    arr[LAST_PERSONAL_BAG_SLOT + 1] = 0; -- reagent bag is the next slot
+    setBagInList(arr, getReagentBagID())
   end
+
   return arr;
 end
 
 function private.GetBankBagIDs()
   local arr = {};
-  -- Add the bags we want to track based on the selectedBags setting
   local selectedBags = Addon.GetFromDb("bagFilter", "selectedBags");
+
   if selectedBags == "all" then
-    for i = FIRST_BANK_SLOT, LAST_BANK_SLOT do
-      arr[i] = 0;
+    if isRetail then
+      addRetailBankBagIDs(arr)
+    else
+      addClassicBankBagIDs(arr)
     end
   end
+
   if selectedBags == "all" or selectedBags == "reagent" then
-    arr[REAGENTBANK_CONTAINER] = 0;
+    setBagInList(arr, getReagentBankID())
   end
+
   return arr;
 end
 
 function private.GetAccountBankBagIDs()
   local arr = {};
+  if not isRetail or LAST_WARBAND_BANK_SLOT < FIRST_WARBAND_BANK_SLOT then
+    return arr
+  end
   for i = FIRST_WARBAND_BANK_SLOT, LAST_WARBAND_BANK_SLOT do
-    arr[i] = 0;
+    setBagInList(arr, i)
   end
   return arr;
 end
