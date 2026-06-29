@@ -31,7 +31,7 @@ local generalOptionsGroup = {
         Addon.db.profile.pricesource.source = value;
         if oldValue ~= value then
           Addon:Print(L["price_source_changed"] .. Addon.CONST.PRICE_SOURCE[value])
-          Addon:UpdateData();
+          Addon:UpdateData(true);
         end
       end,
     },
@@ -55,7 +55,7 @@ local generalOptionsGroup = {
         Addon.db.profile.ldbsource = value;
         if oldValue ~= value then
           Addon:Print(L["ldb_label_source_changed"] .. Addon.CONST.LABEL_SOURCE[value]);
-          Addon:UpdateData();
+          Addon:UpdateData(true);
         end
       end,
     },
@@ -85,7 +85,7 @@ local generalOptionsGroup = {
       get = function(info) return Addon.GetFromDb("topContributors", "enabled") end,
       set = function(info, value)
         Addon.db.profile.topContributors.enabled = value
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end,
     },
     opt09 = { type = "description", order = 35, fontSize = "small", name = " " },
@@ -98,7 +98,7 @@ local generalOptionsGroup = {
       get = function(info) return Addon.GetFromDb("guildBank", "enabled") end,
       set = function(info, value)
         Addon.db.profile.guildBank.enabled = value;
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     opt11 = {
@@ -117,7 +117,7 @@ local generalOptionsGroup = {
       get = function(info) return Addon.GetFromDb("accountBank", "enabled") end,
       set = function(info, value)
         Addon.db.profile.accountBank.enabled = value;
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     opt16 = {
@@ -139,7 +139,7 @@ local generalOptionsGroup = {
       end,
       set = function(info, value)
         Addon.db.profile.moneyPrecision.ldb = value;
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end,
     },
     opt14 = {
@@ -154,7 +154,7 @@ local generalOptionsGroup = {
       end,
       set = function(info, value)
         Addon.db.profile.moneyPrecision.tooltip = value;
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end,
     },
   }
@@ -222,7 +222,7 @@ local filterOptionsGroup = {
         Addon.db.profile.bagFilter.selectedBags = value;
         if oldValue ~= value then
           Addon:Print(format(L["bag_selection_changed"], Addon.CONST.SELECTED_BAGS[value]));
-          Addon:UpdateData();
+          Addon:UpdateData(true);
         end
       end,
     },
@@ -239,7 +239,7 @@ local filterOptionsGroup = {
         if oldValue ~= value then
           Addon:Print(format(L["quality_filter_toggled"], value and L["enabled"] or L["disabled"]));
         end
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     qualityFilter = {
@@ -256,7 +256,7 @@ local filterOptionsGroup = {
         if oldValue ~= value then
           Addon:Print(format(L["quality_filter_changed"], Addon.CONST.QUALITY_FILTER[value]));
         end
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     blank5 = { type = "description", order = 80, fontSize = "small", name = " " },
@@ -276,7 +276,7 @@ local filterOptionsGroup = {
         if oldValue ~= value then
           Addon:Print(format(L["item_blocklist_toggled"], value and L["enabled"] or L["disabled"]));
         end
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     blank1 = {
@@ -307,7 +307,7 @@ local filterOptionsGroup = {
           table.insert(items, link);
           Addon:Print(format(L["item_added_blocklist"], link));
           ClearCursor();
-          Addon:UpdateData();
+          Addon:UpdateData(true);
         else
           ClearCursor();
           Addon:Print(L["item_blocklist_nothing_detected"]);
@@ -334,7 +334,7 @@ local filterOptionsGroup = {
         local item = items[index];
         table.remove(items, index);
         Addon:Print(format(L["blocklist_removed_item"], item));
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     enableAllowedItems = {
@@ -353,7 +353,7 @@ local filterOptionsGroup = {
         if oldValue ~= value then
           Addon:Print(format(L["item_allowlist_toggled"], value and L["enabled"] or L["disabled"]));
         end
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
     blank2 = {
@@ -384,7 +384,7 @@ local filterOptionsGroup = {
           table.insert(items, link);
           Addon:Print(format(L["item_added_allowlist"], link));
           ClearCursor();
-          Addon:UpdateData();
+          Addon:UpdateData(true);
         else
           ClearCursor();
           Addon:Print(L["item_allowlist_nothing_detected"]);
@@ -411,7 +411,7 @@ local filterOptionsGroup = {
         local item = items[index];
         table.remove(items, index);
         Addon:Print(format(L["allowlist_removed_item"], item));
-        Addon:UpdateData();
+        Addon:UpdateData(true);
       end
     },
   }
