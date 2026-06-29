@@ -2,31 +2,48 @@ local Addon = select(2, ...)
 
 local ATR = {}
 Addon.ATR = ATR
-local private = {}
+local private = {
+  loaded = nil,
+  registered = false,
+  isRetail = false,
+  isClassic = false,
+}
 
 function ATR.IsLoaded()
+  if private.loaded ~= nil then
+    return private.loaded
+  end
+
   if Auctionator and Auctionator.API and Auctionator.API.v1 and Auctionator.API.v1.GetAuctionPriceByItemLink then
     -- retail
     private.isRetail = true
     private.isClassic = false
-    local ok = pcall(function()
-      Auctionator.API.v1.RegisterForDBUpdate("BagAppraiser", function() Addon:UpdateData() end)
-    end)
-    if not ok then
-      Addon:Print("failed to register updates with Auctionator")
+    private.loaded = true
+
+    if not private.registered then
+      private.registered = true
+      local ok = pcall(function()
+        Auctionator.API.v1.RegisterForDBUpdate("BagAppraiser", function() Addon:UpdateData(true) end)
+      end)
+      if not ok then
+        Addon:Print("failed to register updates with Auctionator")
+      end
     end
     return true
   elseif Atr_GetAuctionBuyout then
     -- classic
     private.isRetail = false
     private.isClassic = true
+    private.loaded = true
     return true
   end
+
+  private.loaded = false
   return false
 end
 
 function ATR.GetItemValue(itemLink, priceSource)
-  if not ATR.IsLoaded() then
+  if not private.loaded then
     return 0
   end
 
@@ -41,7 +58,7 @@ function ATR.GetItemValue(itemLink, priceSource)
 end
 
 function ATR.GetAvailablePriceSources()
-  if not ATR.IsLoaded() then
+  if not ATR.IsLoaded() then -- initializes private.loaded once
     return
   end
 

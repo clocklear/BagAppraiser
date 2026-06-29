@@ -10,6 +10,17 @@ local private = {
   ignoreSet = {},
   allowedSet = {},
   useAllowSet = false,
+  valuationContext = {},
+  updateTimer = nil,
+  updateScope = {
+    personal = false,
+    bank = false,
+    guildBank = false,
+    accountBank = false,
+  },
+  cachedPersonalBagIDs = nil,
+  cachedBankBagIDs = nil,
+  cachedAccountBankBagIDs = nil,
 }
 
 local isRetail = WOW_PROJECT_ID == (WOW_PROJECT_MAINLINE or 1)
@@ -40,12 +51,18 @@ local LAST_WARBAND_BANK_SLOT = FIRST_WARBAND_BANK_SLOT + (Constants.InventoryCon
 local getContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
 local getContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
 local getContainerItemInfo = function(bag, slot)
-  if GetContainerItemInfo then
-    local _, count, _, itemQuality = GetContainerItemInfo(bag, slot);
-    return count or 0, itemQuality or 0
+  if C_Container and C_Container.GetContainerItemInfo then
+    local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
+    if itemInfo then
+      return itemInfo.stackCount or 0, itemInfo.quality or 0, itemInfo.isBound
+    end
+    return 0, 0, false
   end
-  local itemInfo = C_Container.GetContainerItemInfo(bag, slot)
-  return itemInfo.stackCount or 0, itemInfo.quality or 0
+  if GetContainerItemInfo then
+    local _, count, _, itemQuality, _, _, _, _, _, _, isBound = GetContainerItemInfo(bag, slot)
+    return count or 0, itemQuality or 0, isBound
+  end
+  return 0, 0, false
 end
 
 local AddonDB_Defaults = {
@@ -97,9 +114,9 @@ local AddonDB_Defaults = {
 function Addon:OnInitialize()
   Addon.Debug.Log("Addon - Init")
   Addon.db = LibStub("AceDB-3.0"):New(ADDON_NAME .. "DB", AddonDB_Defaults, true) -- set true to prefer 'Default' profile as default
-  Addon.db.RegisterCallback(Addon, "OnProfileChanged", "UpdateData")
-  Addon.db.RegisterCallback(Addon, "OnProfileCopied", "UpdateData")
-  Addon.db.RegisterCallback(Addon, "OnProfileReset", "UpdateData")
+  Addon.db.RegisterCallback(Addon, "OnProfileChanged", function() Addon:UpdateData(true) end)
+  Addon.db.RegisterCallback(Addon, "OnProfileCopied", function() Addon:UpdateData(true) end)
+  Addon.db.RegisterCallback(Addon, "OnProfileReset", function() Addon:UpdateData(true) end)
   Addon:InitializeDataBroker();
   Addon.Debug.Log("Addon - Complete")
 
@@ -133,11 +150,14 @@ function Addon:OnEnable()
   Addon:RegisterChatCommand("ba", private.chatCmdShowConfig)
 
   if isClassic or isBCC then
-    Addon:RegisterEvent("BAG_UPDATE", private.OnBagUpdateDelayed)
+    Addon:RegisterEvent("BAG_UPDATE", private.OnBagUpdate)
   end
   if isWrath or isRetail then
+    Addon:RegisterEvent("BAG_UPDATE", private.OnBagUpdate)
     Addon:RegisterEvent("BAG_UPDATE_DELAYED", private.OnBagUpdateDelayed)
   end
+
+  Addon:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED", private.OnGuildBankChanged)
 
   if isRetail or isWrath then
     Addon:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW", function(event, arg)
@@ -167,6 +187,7 @@ function Addon:OnEnable()
 
   Addon:Print(format(L["welcome_message"], Addon.CONST.METADATA.VERSION))
   Addon.HandleWhatsNew()
+  Addon:ScheduleUpdateData()
 end
 
 function Addon.HandleWhatsNew()
@@ -214,10 +235,29 @@ function Addon.HandleWhatsNew()
   end
 end
 
-function Addon:UpdateData()
+function Addon:UpdateData(forceFullScan)
   local buildTopContributors = Addon.GetFromDb("topContributors", "enabled")
   local topContributorsLimit = Addon.GetFromDb("topContributors", "limit")
   Addon.Debug.Log("UpdateData() started")
+
+  private.refreshBagIDCaches()
+
+  if forceFullScan then
+    private.markScopeForActiveContainers()
+  elseif not private.hasPendingScope() then
+    private.updateScope.personal = true
+  end
+
+  local scope = private.updateScope
+
+  -- Cache settings used for every item in the hot path
+  local priceSource = Addon.GetFromDb("pricesource", "source")
+  private.valuationContext = {
+    priceSource = priceSource,
+    priceSourceModule = Addon.CONST.PRICE_SOURCE[priceSource],
+    qualityFilterEnabled = Addon.GetFromDb("qualityFilter", "enabled"),
+    qualityFilterValue = tonumber(Addon.GetFromDb("qualityFilter", "value")),
+  }
 
   -- Do this once for performance reasons
   private.ignoreSet = private.getIgnoredItemSet();
@@ -225,22 +265,24 @@ function Addon:UpdateData()
   private.useAllowSet = Addon.GetFromDb("itemAllow", "enabled");
 
   -- Iterate personal bags
-  local bagTopContributors = {};
-  for k, v in pairs(private.GetPersonalBagIDs()) do
-    local bagValue = private.ValuateBag(k)
-    private.SaveValue("Bag", k, bagValue.value)
-    if buildTopContributors then
-      private.insertContributors(bagTopContributors, bagValue.items)
+  if scope.personal then
+    local bagTopContributors = {};
+    for k, v in pairs(private.cachedPersonalBagIDs) do
+      local bagValue = private.ValuateBag(k)
+      private.SaveValue("Bag", k, bagValue.value)
+      if buildTopContributors then
+        private.insertContributors(bagTopContributors, bagValue.items)
+      end
     end
-  end
-  if buildTopContributors then
-    private.persistTopContributors("Bag", bagTopContributors, topContributorsLimit)
+    if buildTopContributors then
+      private.persistTopContributors("Bag", bagTopContributors, topContributorsLimit)
+    end
   end
 
   -- If at the bank, iterate those bags
-  if private.atBank then
+  if scope.bank and private.atBank then
     local bankTopContributors = {};
-    for k, v in pairs(private.GetBankBagIDs()) do
+    for k, v in pairs(private.cachedBankBagIDs) do
       local bagValue = private.ValuateBag(k)
       private.SaveValue("Bag", k, bagValue.value)
       private.SaveBankLastUpdated(time())
@@ -254,10 +296,9 @@ function Addon:UpdateData()
   end
 
   -- If at the gbank and option is enabled, iterate those bags
-  if private.atGuildBank and Addon.GetFromDb("guildBank", "enabled") then
+  if scope.guildBank and private.atGuildBank and Addon.GetFromDb("guildBank", "enabled") then
     local gbankTopContributors = {};
     for tab = 1, GetNumGuildBankTabs() do
-      -- Addon.Debug.Log(format("GBANK: evaluate bag %d", tab));
       local tabValue = private.ValuateGBankTab(tab)
       private.SaveValue("GBankTab", tab, tabValue.value)
       private.SaveGBankLastUpdated(time())
@@ -272,7 +313,7 @@ function Addon:UpdateData()
 
   -- If at the account bank and option is enabled, iterate those bags
   -- Note this is disabled for classic and if the bag filter is not set to 'all'
-  if isRetail and private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
+  if scope.accountBank and isRetail and private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
     local accountBankTopContributors = {};
     for slot = FIRST_WARBAND_BANK_SLOT, LAST_WARBAND_BANK_SLOT do
       local bagValue = private.ValuateBag(slot)
@@ -304,7 +345,75 @@ function Addon:UpdateData()
 
   private.RecalculateTotals();
 
+  private.resetUpdateScope()
+
   Addon.Debug.Log("UpdateData() complete")
+end
+
+function private.refreshBagIDCaches()
+  private.cachedPersonalBagIDs = private.GetPersonalBagIDs()
+  private.cachedBankBagIDs = private.GetBankBagIDs()
+  private.cachedAccountBankBagIDs = private.GetAccountBankBagIDs()
+end
+
+function private.isBagInSet(bagID, bagSet)
+  return bagSet[bagID] ~= nil
+end
+
+function private.hasPendingScope()
+  local scope = private.updateScope
+  return scope.personal or scope.bank or scope.guildBank or scope.accountBank
+end
+
+function private.markScopeForActiveContainers()
+  private.updateScope.personal = true
+  if private.atBank then
+    private.updateScope.bank = true
+  end
+  if isRetail and private.atAccountBank and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
+    private.updateScope.accountBank = true
+  end
+  if private.atGuildBank and Addon.GetFromDb("guildBank", "enabled") then
+    private.updateScope.guildBank = true
+  end
+end
+
+function private.resetUpdateScope()
+  private.updateScope.personal = false
+  private.updateScope.bank = false
+  private.updateScope.guildBank = false
+  private.updateScope.accountBank = false
+end
+
+function private.OnBagUpdate(event, bagID)
+  if not private.cachedPersonalBagIDs then
+    private.refreshBagIDCaches()
+  end
+
+  bagID = tonumber(bagID)
+  if not bagID then
+    private.updateScope.personal = true
+    return
+  end
+
+  if private.isBagInSet(bagID, private.cachedPersonalBagIDs) then
+    private.updateScope.personal = true
+  elseif private.atBank and private.isBagInSet(bagID, private.cachedBankBagIDs) then
+    private.updateScope.bank = true
+  elseif isRetail and private.atAccountBank and private.isBagInSet(bagID, private.cachedAccountBankBagIDs) then
+    private.updateScope.accountBank = true
+  end
+
+  if isClassic or isBCC then
+    Addon:ScheduleUpdateData()
+  end
+end
+
+function private.OnGuildBankChanged()
+  if private.atGuildBank then
+    private.updateScope.guildBank = true
+    Addon:ScheduleUpdateData()
+  end
 end
 
 function Addon.GetFromDb(grp, key, ...)
@@ -354,12 +463,12 @@ end
 
 function private.limitTopContributors(targetTbl, limit)
   -- empty array? return
-  local tableLen = table.getn(targetTbl)
+  local tableLen = #targetTbl
   if tableLen == 0 then
     return {};
   end
   -- do we have less than 'limit' items? if so, just return what we have
-  if table.getn(targetTbl) <= limit then
+  if tableLen <= limit then
     return targetTbl;
   end
   -- limit to top 'limit' results and return
@@ -371,12 +480,34 @@ function private.limitTopContributors(targetTbl, limit)
 end
 
 function private.OnBagUpdateDelayed()
-  Addon:UpdateData();
+  if not private.hasPendingScope() then
+    private.updateScope.personal = true
+  end
+  Addon:ScheduleUpdateData();
+end
+
+function Addon:ScheduleUpdateData()
+  if C_Timer and C_Timer.NewTimer then
+    if private.updateTimer then
+      private.updateTimer:Cancel()
+    end
+    private.updateTimer = C_Timer.NewTimer(0.2, function()
+      private.updateTimer = nil
+      Addon:UpdateData()
+    end)
+  else
+    Addon:UpdateData()
+  end
 end
 
 function private.OnBankFrameOpened()
   private.atBank = true;
   private.atAccountBank = true;
+  private.updateScope.personal = true
+  private.updateScope.bank = true
+  if isRetail and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
+    private.updateScope.accountBank = true
+  end
   Addon:UpdateData();
 end
 
@@ -387,6 +518,8 @@ end
 
 function private.OnGuildBankFrameOpened()
   private.atGuildBank = true;
+  private.updateScope.personal = true
+  private.updateScope.guildBank = true
   Addon:UpdateData();
 end
 
@@ -403,7 +536,6 @@ end
 -- end
 
 function private.ValuateBag(bag)
-  Addon.Debug.Log(format("ValuateBag(): %d", bag))
   local result = {
     value = 0,
     items = {},
@@ -411,24 +543,16 @@ function private.ValuateBag(bag)
   local size = getContainerNumSlots(bag);
   if size > 0 then
     for slot = 1, size do
-      -- Grab the itemlink
       local itemLink = getContainerItemLink(bag, slot);
 
       if itemLink then
-        -- Lets skip bound items for now
-        local isBoundItem = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(bag, slot));
-        if isBoundItem then
-          -- Addon.Debug.Log(format("  skipping %s because it is soulbound", itemLink))
-        else
-          -- Seems like a real item and not soulbound, get info about item and valuate
-          local count, itemQuality = getContainerItemInfo(bag, slot);
+        local count, itemQuality, isBound = getContainerItemInfo(bag, slot);
+        if not isBound then
           private.handleItemValuation(itemLink, itemQuality, count, result)
         end
       end
     end
   end
-  -- Addon.Debug.Log(format(" ValuateBag(): %d", bag))
-  -- Addon.Debug.TableToString(result)
   return result
 end
 
@@ -449,43 +573,34 @@ function private.ValuateGBankTab(tab)
 end
 
 function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
-  -- Use info to lookup value
-  local priceSource = Addon.GetFromDb("pricesource", "source");
-  local qualityFilterEnabled = Addon.GetFromDb("qualityFilter", "enabled");
-  local qualityFilterValue = tonumber(Addon.GetFromDb("qualityFilter", "value"));
+  local ctx = private.valuationContext
+  local qualityFilterEnabled = ctx.qualityFilterEnabled
+  local qualityFilterValue = ctx.qualityFilterValue
 
   -- Should we consider this item?
   if private.ignoreSet[itemLink] then
-    -- Addon.Debug.Log(format("  skipping %s because it's on the item blocklist", itemLink));
     return
   end
 
   if private.useAllowSet and not private.allowedSet[itemLink] then
-    -- Addon.Debug.Log(format("  skipping %s because it's not on the item allowlist", itemLink));
     return
   end
 
   -- Should we consider this items quality?
   if qualityFilterEnabled then
     if itemQuality < qualityFilterValue then
-      -- Addon.Debug.Log(format("  skipping %s because its quality is lower then required", itemLink));
       return
     end
   end
 
-  -- Addon.Debug.Log(format("  private.handleItemValuation(): %s %s %s", itemLink, itemQuality, priceSource))
-  local singleItemValue = private.GetItemValue(itemLink, priceSource) or 0;
+  local singleItemValue = private.GetItemValue(itemLink) or 0;
   local totalValue = singleItemValue * count;
 
-  Addon.Debug.Log(format("  found %d %s", count, itemLink));
   -- If the item is already in the result, just increment the count
   if resultTbl.items[itemLink] then
-    -- Addon.Debug.Log(format("  item already in list, adding %d", count))
     resultTbl.items[itemLink]["count"] = resultTbl.items[itemLink]["count"] + count;
     resultTbl.items[itemLink]["totalValue"] = resultTbl.items[itemLink]["totalValue"] + totalValue;
   else
-    -- Addon.Debug.Log(format("  new item, adding %d", count))
-    -- Otherwise add it
     resultTbl.items[itemLink] = {
       count = count,
       itemValue = singleItemValue,
@@ -494,7 +609,6 @@ function private.handleItemValuation(itemLink, itemQuality, count, resultTbl)
     };
   end
 
-  -- Addon.Debug.Log(format("   current total is: %d", result.items[itemLink]["count"]))
   resultTbl.value = resultTbl.value + totalValue;
 end
 
@@ -630,9 +744,12 @@ function private.RecalculateTotals()
   local ldbMoneyPrecision = Addon.GetFromDb("moneyPrecision", "ldb");
   local tooltipMoneyPrecision = Addon.GetFromDb("moneyPrecision", "tooltip");
 
+  local personalBagIDs = private.cachedPersonalBagIDs or private.GetPersonalBagIDs()
+  local bankBagIDs = private.cachedBankBagIDs or private.GetBankBagIDs()
+  local accountBankBagIDs = private.cachedAccountBankBagIDs or private.GetAccountBankBagIDs()
 
   -- Iterate personal bags
-  local bagTotal = private.GetSavedTotalForBags(private.GetPersonalBagIDs());
+  local bagTotal = private.GetSavedTotalForBags(personalBagIDs);
   local bagTotalString = GetMoneyString(Addon:round(bagTotal, tooltipMoneyPrecision), true);
   Addon:UpdateBagTotalText(bagTotalString);
   if ldbLabelSetting == "bagtotal" then
@@ -641,7 +758,7 @@ function private.RecalculateTotals()
   end
 
   -- Iterate bank bags
-  local bankTotal = private.GetSavedTotalForBags(private.GetBankBagIDs());
+  local bankTotal = private.GetSavedTotalForBags(bankBagIDs);
   local bankTotalString = GetMoneyString(Addon:round(bankTotal, tooltipMoneyPrecision), true);
   Addon:UpdateBankTotalText(bankTotalString);
   if ldbLabelSetting == "banktotal" then
@@ -660,7 +777,7 @@ function private.RecalculateTotals()
   -- Iterate Account Bank bags
   local accountBankTotal = 0;
   if isRetail and Addon.GetFromDb("accountBank", "enabled") and Addon.GetFromDb("bagFilter", "selectedBags") == "all" then
-    accountBankTotal = private.GetSavedTotalForBags(private.GetAccountBankBagIDs());
+    accountBankTotal = private.GetSavedTotalForBags(accountBankBagIDs);
     local accountBankTotalString = GetMoneyString(Addon:round(accountBankTotal, tooltipMoneyPrecision), true);
     Addon:UpdateAccountBankTotalText(accountBankTotalString);
   end
@@ -729,9 +846,17 @@ function private.PreparePriceSources()
     end
   end
 
-  -- sort the list of price sources
-  table.sort(priceSources, function(k1, k2) return priceSources[k1] < priceSources[k2] end)
-  Addon.availablePriceSources = priceSources
+  -- Build a sorted copy for stable dropdown ordering
+  local sortedPriceSources = {}
+  local keys = {}
+  for k in pairs(priceSources) do
+    table.insert(keys, k)
+  end
+  table.sort(keys, function(a, b) return priceSources[a] < priceSources[b] end)
+  for _, k in ipairs(keys) do
+    sortedPriceSources[k] = priceSources[k]
+  end
+  Addon.availablePriceSources = sortedPriceSources
 end
 
 function private.tablelength(T)
@@ -823,18 +948,17 @@ function private.GetAvailablePriceSources()
 end
 
 -- Valuate with selected pricing source
-function private.GetItemValue(itemLink, priceSource)
-  -- from which addon is our selected price source?
-  local selectedPriceSource = Addon.CONST.PRICE_SOURCE[Addon.GetFromDb("pricesource", "source")]
+function private.GetItemValue(itemLink)
+  local selectedPriceSource = private.valuationContext.priceSourceModule
   if private.startsWith(selectedPriceSource, "TUJ:") then
-    return Addon.TUJ.GetItemValue(itemLink, priceSource)
+    return Addon.TUJ.GetItemValue(itemLink, private.valuationContext.priceSource)
   elseif private.startsWith(selectedPriceSource, "OE:") then
-    return Addon.OE.GetItemValue(itemLink, priceSource)
+    return Addon.OE.GetItemValue(itemLink, private.valuationContext.priceSource)
   elseif private.startsWith(selectedPriceSource, "ATR:") then
-    return Addon.ATR.GetItemValue(itemLink, priceSource)
+    return Addon.ATR.GetItemValue(itemLink, private.valuationContext.priceSource)
   elseif private.startsWith(selectedPriceSource, "AHDB:") then
-    return Addon.AHDB.GetItemValue(itemLink, priceSource)
+    return Addon.AHDB.GetItemValue(itemLink, private.valuationContext.priceSource)
   else
-    return Addon.TSM.GetItemValue(itemLink, priceSource)
+    return Addon.TSM.GetItemValue(itemLink, private.valuationContext.priceSource)
   end
 end
