@@ -501,6 +501,7 @@ function private.insertContributors(targetTbl, itemsTbl)
       -- increment the existing count
       -- Addon.Debug.Log(format(" insertContributors(): appending %dx %s", v.count, itemLink))
       targetTbl[itemLink].count = targetTbl[itemLink].count + v.count
+      targetTbl[itemLink].totalValue = targetTbl[itemLink].totalValue + v.totalValue
     else
       -- wasnt already in the table, append
       -- Addon.Debug.Log(format(" insertContributors(): inserting %dx %s", v.count, itemLink))
